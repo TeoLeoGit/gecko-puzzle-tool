@@ -1,7 +1,12 @@
 
+import { Node } from "cc";
 import { CarryItemType, ColorType, DifficultyType, GeckoType } from "./Type";
 
-// These types weren't provided in the prompt; keep them permissive for now.
+export class Config {
+  public static MAX_ROW = 16;
+  public static MAX_COLUMN = 16;
+}
+
 export interface GeckoPart {
   [key: string]: unknown;
 }
@@ -85,5 +90,12 @@ export function normalizeGeckoData(input: GeckoDataJson): GeckoData {
     parts: input.parts,
     covers,
   };
+}
+
+export type InputDeleteGridObject = {
+  x: number,
+  y: number,
+  icon: string,
+  rootObj: Node
 }
 

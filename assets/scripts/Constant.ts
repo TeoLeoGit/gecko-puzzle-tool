@@ -1,3 +1,5 @@
 export enum Event {
   EDIT_LEVEL = 'EDIT_LEVEL',
+  DELETE_ONE_BODY = 'DELETE_ONE_BODY',
+  CHANGE_COLOR = 'CHANGE_COLOR',
 }
