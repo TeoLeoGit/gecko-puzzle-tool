@@ -1,6 +1,9 @@
 import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log } from "cc";
 import { Cell } from "./Cell";
 import { Config } from "./Config";
+import { Global } from "./Global";
+import { Event } from './Constant';
+import EventManager from "./EventManager";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -41,6 +44,8 @@ export class Tool extends Component {
         input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
 
+        EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
+
         this.initGrid();
     }
 
@@ -48,6 +53,8 @@ export class Tool extends Component {
         input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
         input.off(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+
+        EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
     }
 
     onMouseDown(event: EventMouse) {
@@ -180,5 +187,12 @@ export class Tool extends Component {
         //     this.editBoxTime.string = data.time.toString();
         // } else this.editBoxTime.string = '0';
         // this.lblLevel.string = `Level ${level}`;
+    }
+
+    onChangeColor() {
+        if (this._draggedBody) {
+        }
+        if (this._draggedHole) {
+        }
     }
 }
