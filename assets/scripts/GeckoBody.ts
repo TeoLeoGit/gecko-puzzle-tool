@@ -11,6 +11,9 @@ export class GeckoBody extends Component {
     @property(Button)
     btnOpenSpecialGecko: Button;
 
+    @property(Node)
+    nodeArrow: Node;
+
     private _x: number;
     private _y: number;
     private _isPreview: boolean = false;
@@ -31,6 +34,22 @@ export class GeckoBody extends Component {
     disableBtn() {
         this._isPreview = true;
         this.btnOpenSpecialGecko.destroy();
+    }
+
+    setDirection(prevBodyPos: Vec2) {
+        if (!this.nodeArrow) return;
+
+        const dx = prevBodyPos.x - this._x;
+        const dy = prevBodyPos.y - this._y;
+
+        // Arrow art is authored pointing up at 0deg.
+        // atan2 is measured from +X, so offset by -90deg to map +Y to 0deg.
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+        this.nodeArrow.angle = angle;
+    }
+
+    setHead() {
+        
     }
 
 }

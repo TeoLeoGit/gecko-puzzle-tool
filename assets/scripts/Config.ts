@@ -1,6 +1,7 @@
 
 import { Node } from "cc";
 import { CarryItemType, ColorType, DifficultyType, GeckoType } from "./Type";
+import { GeckoBody } from "./GeckoBody";
 
 export class Config {
   public static MAX_ROW = 16;
@@ -98,4 +99,3 @@ export type InputDeleteGridObject = {
   icon: string,
   rootObj: Node
 }
-

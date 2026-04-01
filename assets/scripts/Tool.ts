@@ -21,6 +21,15 @@ export class Tool extends Component {
     @property(Node)
     previewLayer: Node = null!;
 
+    @property(Node)
+    btnDesginGecko: Node = null!;
+
+    @property(Node)
+    btnDesginHole: Node = null!;
+
+    @property(Node)
+    btnFinishGecko: Node = null;
+
     @property(Prefab)
     cellPrefab: Prefab = null!;
 
@@ -41,9 +50,8 @@ export class Tool extends Component {
     private _isPainting: boolean = false;
     private _isDeleteWall: boolean = false;
     private _gridChilds: Node[] = [];
-
     private _levelNumb: number = 0;
-
+    private _sectionBodies: GeckoBody[] = [];
 
     onLoad() {
         input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
@@ -51,6 +59,8 @@ export class Tool extends Component {
         input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
 
         EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
+        EventManager.instance.on(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
+        EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
 
         this.initGrid();
         this.init();
@@ -62,6 +72,8 @@ export class Tool extends Component {
         input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
 
         EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
+        EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
+        EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
     }
 
     onMouseDown(event: EventMouse) {
@@ -69,7 +81,6 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
-            log("ok!");
         }
     }
     
@@ -98,6 +109,10 @@ export class Tool extends Component {
         if (this._isDeleteWall && this._mouseDown) {
             //this.deleteWallUnderPointer(event);
             return;
+        }
+        if (Global.DesignMode === DesignMode.CreateGecko) {
+            const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
+            if (snappedPos) this.createGeckoBodyAt(snappedPos);
         }
         // if (this._isCreateBody && this._draggedGeckoBody) {
         //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
@@ -258,16 +273,28 @@ export class Tool extends Component {
     }
 
     createGeckoBodyAt(position: Vec3) {
+        const rootCell = this._rootCell.getComponent(Cell);
         const newBlock = instantiate(this.bodyGeckoPrefab);
-        const canCreate = this.fillEmptyCell(this._rootCell, newBlock);
 
+        const isConnected = this.isConnectedBodyPart(rootCell.X, rootCell.Y);
+        if (!isConnected) {
+            newBlock.destroy();
+            return;
+        }
+
+        const canCreate = this.fillEmptyCell(this._rootCell, newBlock);
         if (canCreate) {
             this.geckoParent.addChild(newBlock);
             newBlock.setWorldPosition(position);
-            const blockComponent = newBlock.getComponent(GeckoBody);
-            const rootCell = this._rootCell.getComponent(Cell);
-            blockComponent.setColor(Global.ColorType);
-            blockComponent.setRoot(rootCell.X, rootCell.Y);
+            const bodyComponent = newBlock.getComponent(GeckoBody);
+            bodyComponent.setColor(Global.ColorType);
+            bodyComponent.setRoot(rootCell.X, rootCell.Y);
+            if (this._sectionBodies.length > 0) {
+                bodyComponent.setDirection(this._sectionBodies[this._sectionBodies.length - 1].RootPos);
+            } else {
+                bodyComponent.setHead();
+            }
+            this._sectionBodies.push(bodyComponent);
 
             // let newBlockData: BlockData = {
             //     icon: `PA_Grid_${Global.ShapeId}_${Global.ColorId}`,
@@ -289,5 +316,49 @@ export class Tool extends Component {
             return true;
         }
         return false;
+    }
+
+    isConnectedBodyPart(x: number, y: number): boolean {
+        //Check if connect with last _sectionBodies item.
+        if (this._sectionBodies.length === 0) return true;
+
+        const lastBody = this._sectionBodies[this._sectionBodies.length - 1];
+        const lastPos = lastBody.RootPos;
+
+        const dx = Math.abs(x - lastPos.x);
+        const dy = Math.abs(y - lastPos.y);
+
+        // Connected if it's exactly 1 cell away in the same row or column.
+        // (No diagonals, no gaps)
+        return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    }
+
+    onChooseGeckoDesignMode() {
+        if (Global.DesignMode === DesignMode.CreateGecko) {
+            this.clearDesignMode();
+            this._draggedGeckoBody.active = false;
+            this.btnDesginGecko.getChildByName("Sprite_check").active = false;
+            this._sectionBodies = [];
+            return;
+        }
+
+        this.clearDesignMode();
+        this._draggedGeckoBody.active = true;
+        this.btnDesginGecko.getChildByName("Sprite_check").active = true;
+        this._sectionBodies = [];
+        Global.DesignMode = DesignMode.CreateGecko;
+    }
+
+    onChooseHoleDesignMode() {
+        this.clearDesignMode();
+
+        this._draggedHole.active = true;
+        Global.DesignMode = DesignMode.CreateHole;
+    }
+
+    clearDesignMode() {
+        // this._draggedGeckoBody.active = false;
+        // this._draggedHole.active = false;
+        Global.DesignMode = DesignMode.None;
     }
 }
