@@ -176,13 +176,11 @@ export class Tool extends Component {
             }
             this._grid.push(row);
         }
-        this.initDefaultWalls();
         this.resizeGrid(Config.MAX_ROW, Config.MAX_COLUMN);
+        this.initWalls(Config.MAX_ROW, Config.MAX_COLUMN);
     }
 
-    initDefaultWalls() {
-        const rows = Config.MAX_ROW;
-        const cols = Config.MAX_COLUMN;
+    initWalls(cols: number, rows: number) {
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
                 if (i === 0 || i === rows - 1 || j === 0 || j === cols - 1) {
@@ -324,6 +322,7 @@ export class Tool extends Component {
             this.clearGeckoBodies();
         }, 0.4);
         this.scheduleOnce(() => {
+            this.initWalls(col, row);
         }, 0.6);
     }
 
