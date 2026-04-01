@@ -1,6 +1,7 @@
 import { _decorator, Button, Component, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
 import { ColorType } from './Type';
-import { getColor } from './Utils';
+import { getColor, setSprite } from './Utils';
+import { Global } from './Global';
 const { ccclass, property } = _decorator;
 
 @ccclass('GeckoBody')
@@ -49,9 +50,9 @@ export class GeckoBody extends Component {
     }
 
     setHead() {
-        
+        setSprite("Gecko_head", this.nodeArrow.getComponent(Sprite));
+        this.nodeArrow.getComponent(Sprite).color = getColor(Global.ColorType);
     }
-
 }
 
 

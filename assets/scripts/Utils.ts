@@ -1,6 +1,5 @@
-import { _decorator, Color, Component, Node } from 'cc';
+import { _decorator, Color, Component, Node, resources, Sprite, SpriteFrame } from 'cc';
 import { ColorType } from './Type';
-const { ccclass, property } = _decorator;
 
 export const getColor = (color: ColorType): Color => {
     switch (color) {
@@ -39,4 +38,20 @@ export const getColor = (color: ColorType): Color => {
     }
 }
 
+export const setSprite = (spriteName: string, applySprite: Sprite) => {
+    resources.loadDir<SpriteFrame>('images/level/' + spriteName, SpriteFrame, (err, assets) => {
+        if (err) {
+            console.error('Failed to load sprites: ', err);
+            return;
+        }
+    
+        const found = assets[0];
+        if (found) {
+            applySprite.spriteFrame = found;
+        } else {
+            console.warn('Sprite not found: ', spriteName);
+            return;
+        }
+    });
+}
 

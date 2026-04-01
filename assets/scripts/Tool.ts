@@ -78,6 +78,7 @@ export class Tool extends Component {
 
     onMouseDown(event: EventMouse) {
         this._mouseDown = true;
+
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
@@ -102,6 +103,7 @@ export class Tool extends Component {
             this._draggedGeckoBody.setWorldPosition(worldPos);
             this._mousePos = worldPos;
         }
+        if (!this._mouseDown) return;
         if (this._isPainting && this._mouseDown) {
             //this.paintWallUnderPointer(event);
             return;

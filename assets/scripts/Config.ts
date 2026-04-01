@@ -1,7 +1,6 @@
 
 import { Node } from "cc";
 import { CarryItemType, ColorType, DifficultyType, GeckoType } from "./Type";
-import { GeckoBody } from "./GeckoBody";
 
 export class Config {
   public static MAX_ROW = 16;
@@ -49,26 +48,30 @@ export interface GeckoDataJson {
   properties?: GeckoProperties;
   parts?: GeckoPart[];
   Cover?: CoverData[];
-  layers?: CoverData[]; // legacyLayersAlias setter in Unity
+  layers?: CoverData[];
 }
 
-// Normalized shape for Cocos-side code (Unity-like field names).
 export interface GeckoData {
   id: number;
   type: GeckoType;
   color: ColorType;
-  // Unity getter: `public ColorType colorType => color;`
   colorType: ColorType;
   properties?: GeckoProperties;
   parts?: GeckoPart[];
-  // Unity field: `public List<CoverData> covers;` (serialized as `Cover`)
   covers: CoverData[];
 }
 
 export interface LevelData {
-  id: number;
-  difficulty: DifficultyType;
+  level: number;
+  time: number;
+  difficulty: string;
+  width: number;
+  height: number;
+  cells: string[];
+  grounds: [];
+  holes: [];
   geckos: GeckoData[];
+  Cover: [];
 }
 
 export function normalizeGeckoData(input: GeckoDataJson): GeckoData {
