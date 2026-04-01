@@ -1,4 +1,4 @@
-import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform } from "cc";
+import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout } from "cc";
 import { Cell } from "./Cell";
 import { Config } from "./Config";
 import { Global } from "./Global";
@@ -11,6 +11,9 @@ const { ccclass, property } = _decorator;
 export class Tool extends Component {
     @property(Camera)
     mainCamera: Camera = null!;
+
+    @property(Layout)
+    layoutGrid: Layout = null!;
 
     @property(Node)
     gridParent: Node = null!; // Holds grid cells
@@ -39,6 +42,15 @@ export class Tool extends Component {
     @property(Prefab)
     bodyGeckoPrefab: Prefab = null!;
 
+    @property(EditBox)
+    editBoxCol: EditBox = null!;
+
+    @property(EditBox)
+    editBoxRow: EditBox = null!;
+
+    @property(EditBox)
+    editBoxTime: EditBox = null!;
+
     private _draggedGeckoBody: Node | null = null;
     private _draggedHole:      Node | null = null;
     private _mousePos: Vec3 = new Vec3();
@@ -58,6 +70,9 @@ export class Tool extends Component {
         input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
 
+        this.editBoxCol.node.on(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
+        this.editBoxRow.node.on(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
+
         EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
         EventManager.instance.on(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
@@ -70,6 +85,9 @@ export class Tool extends Component {
         input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
         input.off(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+
+        this.editBoxCol.node.off(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
+        this.editBoxRow.node.off(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
 
         EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
         EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
@@ -239,6 +257,81 @@ export class Tool extends Component {
         }
         if (this._draggedHole) {
         }
+    }
+
+    //Edit box
+    onColumnChanged(editBox: EditBox) {
+        const value = editBox.string;
+        const parsed = Number(value);
+
+        if (isNaN(parsed)) {
+            log(`Invalid number: "${value}"`);
+        } else {
+            if (parsed > 2 && parsed <= Config.MAX_COLUMN) {
+                Global.ColCount = parsed;
+                this.onGridDimChanged(Global.ColCount, Global.RowCount);
+                // this._editLevel.blocks = [];
+                // this._editLevel.exits = [];
+            }
+        }
+    }
+
+    onRowChanged(editBox: EditBox) {
+        const value = editBox.string;
+        const parsed = Number(value);
+
+        if (isNaN(parsed)) {
+            log(`Invalid number: "${value}"`);
+        } else {
+            if (parsed > 2 && parsed <= Config.MAX_ROW) {
+                Global.RowCount = parsed;
+                this.onGridDimChanged(Global.ColCount, Global.RowCount);
+                // this._editLevel.blocks = [];
+                // this._editLevel.exits = [];
+            }
+        }
+    }
+
+    onGridDimChanged(col: number, row: number) {
+        this.layoutGrid.constraintNum = col;
+        const cellNumb = col * row;
+
+        for (let i = 0; i < cellNumb; i++) {
+            this.gridParent.children[i].active = true;
+            this.gridParent.children[i].getComponent(Cell).reset();
+        }
+        for (let i = cellNumb; i < this.gridParent.children.length; i++) {
+            this.gridParent.children[i].getComponent(Cell).reset();
+            this.gridParent.children[i].active = false;
+        }
+
+        let childIter = 0;
+        this._grid = [];
+        for (let i = 0; i < row; i++) {
+            let row: Cell[] = [];
+            for (let j = 0; j < col; j++) {
+                const cell = this._gridChilds[childIter].getComponent(Cell);
+                cell.init(j, i);
+                row.push(cell);
+                childIter++;
+            }
+            this._grid.push(row);
+        }
+
+        this.gridParent.position = new Vec3(64 + (Config.MAX_COLUMN - col) * 10, -406 + (Config.MAX_ROW - row) * 50);
+
+        this.scheduleOnce(() => {
+            this.clearGeckoBodies();
+        }, 0.4);
+        this.scheduleOnce(() => {
+        }, 0.6);
+    }
+
+    clearGeckoBodies() {
+        for (const child of this.geckoParent.children) {
+            child.destroy();
+        }
+        this.geckoParent.removeAllChildren();
     }
 
     //Design Mode

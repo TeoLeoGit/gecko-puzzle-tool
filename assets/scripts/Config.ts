@@ -38,9 +38,6 @@ export interface GeckoProperties {
   specialGecko?: SpecialGeckoData;
 }
 
-// Matches Unity JSON keys:
-// - `Cover` is serialized from Unity's `covers`
-// - legacy `layers` is accepted and mapped to `covers`
 export interface GeckoDataJson {
   id: number;
   type: GeckoType;

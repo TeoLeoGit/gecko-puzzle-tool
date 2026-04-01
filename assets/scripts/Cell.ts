@@ -88,6 +88,19 @@ export class Cell extends Component {
     public setContainForGeckoBody(geckoBody: Node) {
         this._containBody = geckoBody;
     }
+
+    public reset() {
+        this._x = -1;
+        this._y = -1;
+        this.debugGrid = `${this._x}, ${this._y}`;
+        this._isEmpty = true;
+        this._isWall = false;
+
+        this.sprite.node.active = true;
+        const oldColor = this.sprite.color;
+        this.sprite.color = new Color(oldColor.r, oldColor.g, oldColor.b, 145);
+        this.sprite.spriteFrame = this.sfCell;
+    }
 }
 
 
