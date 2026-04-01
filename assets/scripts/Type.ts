@@ -59,3 +59,10 @@ export enum DifficultyType {
   Hard = 2,
 }
 
+export enum DesignMode {
+  CreateGecko = 0,
+  CreateWall = 1,
+  DeleteGecko = 2,
+  DeleteWall = 3,
+}
+

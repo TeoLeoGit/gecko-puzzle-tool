@@ -84,6 +84,10 @@ export class Cell extends Component {
             this.IsEmpty = true;
         }
     }
+
+    public setContainForGeckoBody(geckoBody: Node) {
+        this._containBody = geckoBody;
+    }
 }
 
 

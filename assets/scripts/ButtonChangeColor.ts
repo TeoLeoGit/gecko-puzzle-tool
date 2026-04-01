@@ -13,7 +13,6 @@ export class ButtonChangeColor extends Component {
         Global.ColorType = this.colorId;
         EventManager.instance.emit(Event.CHANGE_COLOR);
         log(this.colorId);
-
     }
 }
 

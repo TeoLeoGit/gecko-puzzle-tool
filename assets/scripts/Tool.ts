@@ -1,9 +1,11 @@
-import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log } from "cc";
+import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform } from "cc";
 import { Cell } from "./Cell";
 import { Config } from "./Config";
 import { Global } from "./Global";
 import { Event } from './Constant';
 import EventManager from "./EventManager";
+import { DesignMode } from "./Type";
+import { GeckoBody } from "./GeckoBody";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -13,6 +15,12 @@ export class Tool extends Component {
     @property(Node)
     gridParent: Node = null!; // Holds grid cells
 
+    @property(Node)
+    geckoParent: Node = null!;
+
+    @property(Node)
+    previewLayer: Node = null!;
+
     @property(Prefab)
     cellPrefab: Prefab = null!;
 
@@ -20,18 +28,16 @@ export class Tool extends Component {
     holePrefab: Prefab = null!;
 
     @property(Prefab)
-    bodyPrefab: Prefab = null!;
+    bodyGeckoPrefab: Prefab = null!;
 
-    private _draggedBody: Node | null = null;
-    private _draggedHole: Node | null = null;
+    private _draggedGeckoBody: Node | null = null;
+    private _draggedHole:      Node | null = null;
     private _mousePos: Vec3 = new Vec3();
     private _mouseDown: boolean = false;
     private _grid: Cell[][] = [];
     private _wallGrid: number[][] = [];
     private _rootCell: Node = null;
     private _rootWall: Node = null;
-    private _isCreateBody: boolean = false;
-    private _isCreateHole: boolean = false;
     private _isPainting: boolean = false;
     private _isDeleteWall: boolean = false;
     private _gridChilds: Node[] = [];
@@ -47,6 +53,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
 
         this.initGrid();
+        this.init();
     }
 
     onDestroy() {
@@ -59,23 +66,31 @@ export class Tool extends Component {
 
     onMouseDown(event: EventMouse) {
         this._mouseDown = true;
-        // if (this._isPainting) this.paintWallUnderPointer(event);
-        // else if (this._isDeleteWall) this.deleteWallUnderPointer(event);
+        if (Global.DesignMode === DesignMode.CreateGecko) {
+            const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
+            if (snappedPos) this.createGeckoBodyAt(snappedPos);
+            log("ok!");
+        }
     }
     
     onMouseUp(event: EventMouse) {
         this._mouseDown = false;
 
-        if (this._isCreateBody) {
+        // if (this._isCreateBody) {
             // const snappedPos = this.getClosestGridPosition(this._draggedBlock.worldPosition);
             // if (snappedPos) this.createBlockAt(snappedPos);
-        } else if (this._isCreateHole) {
+        // } else if (this._isCreateHole) {
             // const snappedPos = this.getClosestWallPosition(this._draggedExit.worldPosition);
             // if (snappedPos) this.createExitAt(snappedPos);
-        }
+        // }
     }
     
     onMouseMove(event: EventMouse) {
+        if (Global.DesignMode === DesignMode.CreateGecko && this._draggedGeckoBody) {
+            const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this._draggedGeckoBody.setWorldPosition(worldPos);
+            this._mousePos = worldPos;
+        }
         if (this._isPainting && this._mouseDown) {
             //this.paintWallUnderPointer(event);
             return;
@@ -84,21 +99,33 @@ export class Tool extends Component {
             //this.deleteWallUnderPointer(event);
             return;
         }
-        if (this._isCreateBody && this._draggedBody) {
-            const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
-            this._draggedBody.setWorldPosition(worldPos);
-            this._mousePos = worldPos;
-        } else if (this._isCreateHole && this._draggedHole) {
-            const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
-            this._draggedHole.setWorldPosition(worldPos);
-            this._mousePos = worldPos;
-        }
+        // if (this._isCreateBody && this._draggedGeckoBody) {
+        //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+        //     this._draggedGeckoBody.setWorldPosition(worldPos);
+        //     this._mousePos = worldPos;
+        // } else if (this._isCreateHole && this._draggedHole) {
+        //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+        //     this._draggedHole.setWorldPosition(worldPos);
+        //     this._mousePos = worldPos;
+        // }
     }
 
     screenToWorld(screenPos: Vec3): Vec3 {
         const out = new Vec3();
         this.mainCamera.screenToWorld(screenPos, out);
         return out;
+    }
+
+    init() {
+        //Drag gecko body
+        if (!this._draggedGeckoBody) {
+            const body = instantiate(this.bodyGeckoPrefab);
+            this.previewLayer.addChild(body);
+            const bodyPos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
+            body.setPosition(bodyPos);
+            body.getComponent(GeckoBody).disableBtn();
+            this._draggedGeckoBody = body;
+        }
     }
 
     initGrid() {
@@ -190,9 +217,77 @@ export class Tool extends Component {
     }
 
     onChangeColor() {
-        if (this._draggedBody) {
+        if (this._draggedGeckoBody) {
+            this._draggedGeckoBody.getComponent(GeckoBody).setColor(Global.ColorType);
         }
         if (this._draggedHole) {
         }
+    }
+
+    //Design Mode
+    getClosestGridPosition(worldPos: Vec3): Vec3 {
+        let closest = null;
+        let minDist = Number.MAX_VALUE;
+    
+        for (const tile of this.gridParent.children) {
+            const dist = Vec3.distance(tile.worldPosition, worldPos);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = tile;
+            }
+        }
+        
+        if (minDist > 1003) return null;
+        this._rootCell = closest;
+        return closest ? closest.worldPosition : worldPos;
+    }
+
+    findCellAt(pos: Vec3): Node | null {
+        let closest = null;
+        let minDist = Number.MAX_VALUE;
+    
+        for (const tile of this.gridParent.children) {
+            const dist = Vec3.distance(tile.worldPosition, pos);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = tile;
+            }
+        }
+        
+        return closest;
+    }
+
+    createGeckoBodyAt(position: Vec3) {
+        const newBlock = instantiate(this.bodyGeckoPrefab);
+        const canCreate = this.fillEmptyCell(this._rootCell, newBlock);
+
+        if (canCreate) {
+            this.geckoParent.addChild(newBlock);
+            newBlock.setWorldPosition(position);
+            const blockComponent = newBlock.getComponent(GeckoBody);
+            const rootCell = this._rootCell.getComponent(Cell);
+            blockComponent.setColor(Global.ColorType);
+            blockComponent.setRoot(rootCell.X, rootCell.Y);
+
+            // let newBlockData: BlockData = {
+            //     icon: `PA_Grid_${Global.ShapeId}_${Global.ColorId}`,
+            //     x: rootCell.X,
+            //     y: rootCell.Y,
+            //     type: 0,
+            // }
+            // this._editLevel.blocks.push(newBlockData);
+        } else {
+            newBlock.destroy();
+        }
+    }
+
+    fillEmptyCell(root: Node, geckoBody: Node): boolean {
+        const rootCell = root.getComponent(Cell);
+        if (rootCell.IsEmpty && !rootCell.IsWall) {
+            rootCell.IsEmpty = false;
+            rootCell.setContainForGeckoBody(geckoBody);
+            return true;
+        }
+        return false;
     }
 }
