@@ -1,4 +1,4 @@
-import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout } from "cc";
+import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle } from "cc";
 import { Cell } from "./Cell";
 import { Config } from "./Config";
 import { Global } from "./Global";
@@ -6,6 +6,7 @@ import { Event } from './Constant';
 import EventManager from "./EventManager";
 import { DesignMode } from "./Type";
 import { GeckoBody } from "./GeckoBody";
+import { Hole } from "./Hole";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -22,6 +23,9 @@ export class Tool extends Component {
     geckoParent: Node = null!;
 
     @property(Node)
+    holeParent: Node = null!;
+
+    @property(Node)
     previewLayer: Node = null!;
 
     @property(Node)
@@ -32,6 +36,9 @@ export class Tool extends Component {
 
     @property(Node)
     btnFinishGecko: Node = null;
+
+    @property(Node)
+    btnDesginWall: Node = null!;
 
     @property(Prefab)
     cellPrefab: Prefab = null!;
@@ -51,6 +58,9 @@ export class Tool extends Component {
     @property(EditBox)
     editBoxTime: EditBox = null!;
 
+    @property(Toggle)
+    toggleDiff: Toggle[] = [];
+    
     private _draggedGeckoBody: Node | null = null;
     private _draggedHole:      Node | null = null;
     private _mousePos: Vec3 = new Vec3();
@@ -101,6 +111,10 @@ export class Tool extends Component {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
         }
+        if (Global.DesignMode === DesignMode.CreateHole) {
+            const snappedPos = this.getClosestGridPosition(this._draggedHole.worldPosition);
+            if (snappedPos) this.createHoleAt(snappedPos);
+        }
     }
     
     onMouseUp(event: EventMouse) {
@@ -116,23 +130,38 @@ export class Tool extends Component {
     }
     
     onMouseMove(event: EventMouse) {
-        if (Global.DesignMode === DesignMode.CreateGecko && this._draggedGeckoBody) {
+        if (Global.DesignMode === DesignMode.CreateGecko) {
             const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
             this._draggedGeckoBody.setWorldPosition(worldPos);
             this._mousePos = worldPos;
         }
+
+        if (Global.DesignMode === DesignMode.CreateHole) {
+            const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this._draggedHole.setWorldPosition(worldPos);
+            this._mousePos = worldPos;
+        }
+
         if (!this._mouseDown) return;
-        if (this._isPainting && this._mouseDown) {
-            //this.paintWallUnderPointer(event);
-            return;
-        }
-        if (this._isDeleteWall && this._mouseDown) {
-            //this.deleteWallUnderPointer(event);
-            return;
-        }
+        // if (this._isPainting && this._mouseDown) {
+        //     //this.paintWallUnderPointer(event);
+        //     return;
+        // }
+        // if (this._isDeleteWall && this._mouseDown) {
+        //     //this.deleteWallUnderPointer(event);
+        //     return;
+        // }
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
+        }
+
+        if (Global.DesignMode === DesignMode.CreateWall) {
+            this.createWall(event);
+        }
+
+        if (Global.DesignMode === DesignMode.DeleteWall) {
+            this.deleteWall(event);
         }
         // if (this._isCreateBody && this._draggedGeckoBody) {
         //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
@@ -160,6 +189,14 @@ export class Tool extends Component {
             body.setPosition(bodyPos);
             body.getComponent(GeckoBody).disableBtn();
             this._draggedGeckoBody = body;
+        }
+        if (!this._draggedHole) {
+            const hole = instantiate(this.holePrefab);
+            this.previewLayer.addChild(hole);
+            const holePos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
+            hole.setPosition(holePos);
+            //hole.getComponent(Hole).disableBtn();
+            this._draggedHole = hole;
         }
     }
 
@@ -402,6 +439,48 @@ export class Tool extends Component {
         }
     }
 
+    createHoleAt(position: Vec3) {
+        const rootCell = this._rootCell.getComponent(Cell);
+        const newHole = instantiate(this.holePrefab);
+
+        const canCreate = this.fillEmptyCell(this._rootCell, newHole);
+        if (canCreate) {
+            this.holeParent.addChild(newHole);
+            newHole.setWorldPosition(position);
+            const holeComponent = newHole.getComponent(Hole);
+            holeComponent.setColor(Global.ColorType);
+            holeComponent.setRoot(rootCell.X, rootCell.Y);
+
+            // let newBlockData: BlockData = {
+            //     icon: `PA_Grid_${Global.ShapeId}_${Global.ColorId}`,
+            //     x: rootCell.X,
+            //     y: rootCell.Y,
+            //     type: 0,
+            // }
+            // this._editLevel.blocks.push(newBlockData);
+        } else {
+            newHole.destroy();
+        }
+    }
+
+    createWall(event: EventMouse) {
+        const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+
+        // Find the grid cell or wall under this position
+        const targetCell = this.findCellAt(worldPos);
+        if (targetCell) {
+            targetCell.getComponent(Cell)?.setWall();
+        }
+    }
+
+    deleteWall(event: EventMouse) {
+        const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+        const targetCell = this.findCellAt(worldPos);
+        if (targetCell) {
+            targetCell.getComponent(Cell)?.deleteWall();
+        }
+    }
+
     fillEmptyCell(root: Node, geckoBody: Node): boolean {
         const rootCell = root.getComponent(Cell);
         if (rootCell.IsEmpty && !rootCell.IsWall) {
@@ -431,7 +510,6 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             this.clearDesignMode();
             this._draggedGeckoBody.active = false;
-            this.btnDesginGecko.getChildByName("Sprite_check").active = false;
             this._sectionBodies = [];
             return;
         }
@@ -444,15 +522,40 @@ export class Tool extends Component {
     }
 
     onChooseHoleDesignMode() {
+        if (Global.DesignMode === DesignMode.CreateHole) {
+            this.clearDesignMode();
+            this._draggedHole.active = false;
+            return;
+        }
+        
         this.clearDesignMode();
-
         this._draggedHole.active = true;
+        this.btnDesginHole.getChildByName("Sprite_check").active = true;
         Global.DesignMode = DesignMode.CreateHole;
     }
 
+    onChooseWallDesignMode() {
+        if (Global.DesignMode === DesignMode.CreateWall) {
+            this.clearDesignMode();
+            return;
+        }
+
+        this.clearDesignMode();
+        this.btnDesginWall.getChildByName("Sprite_check").active = true;
+        Global.DesignMode = DesignMode.CreateWall;
+    }
+
+    onChooseDeleteWall() {
+        this.clearDesignMode();
+        Global.DesignMode = DesignMode.DeleteWall;
+    }
+
     clearDesignMode() {
-        // this._draggedGeckoBody.active = false;
-        // this._draggedHole.active = false;
+        this._draggedGeckoBody.active = false;
+        this._draggedHole.active = false;
+        this.btnDesginHole.getChildByName("Sprite_check").active = false;
+        this.btnDesginGecko.getChildByName("Sprite_check").active = false;
+        this.btnDesginWall.getChildByName("Sprite_check").active = false;
         Global.DesignMode = DesignMode.None;
     }
 }

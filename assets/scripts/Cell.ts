@@ -70,7 +70,7 @@ export class Cell extends Component {
         this._isWall = false;
 
         const oldColor = this.sprite.color;
-        this.sprite.color = new Color(oldColor.r, oldColor.g, oldColor.b, 145);
+        this.sprite.color = new Color(oldColor.r, oldColor.g, oldColor.b, 255);
         this.sprite.spriteFrame = this.sfCell;
     }
     

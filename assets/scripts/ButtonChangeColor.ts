@@ -1,4 +1,4 @@
-import { _decorator, Component, log } from 'cc';
+import { _decorator, CCInteger, Component, log } from 'cc';
 import { Global } from './Global';
 import { Event } from './Constant';
 import EventManager from './EventManager';
@@ -6,7 +6,7 @@ const { ccclass, property } = _decorator;
 
 @ccclass('ButtonChangeColor')
 export class ButtonChangeColor extends Component {
-    @property(Number)
+    @property(CCInteger)
     colorId: number = 0;
 
     onClick() {
