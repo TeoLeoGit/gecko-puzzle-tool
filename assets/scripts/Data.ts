@@ -13,8 +13,8 @@ export class Data {
         return this._levels;
     }
 
-    public static mergeLevel(levelKey: string | number, level: LevelData) {
-        const idx = Number(levelKey);
+    public static mergeLevel(levelNumb: string | number, level: LevelData) {
+        const idx = Number(levelNumb);
         if (isNaN(idx) || idx < 0) {
             return;
         }
@@ -35,7 +35,7 @@ export class Data {
         const saveData: LevelsJsonRoot = { levels };
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([JSON.stringify(saveData)], { type: "application/json" }));
-        a.download = "level.json";
+        a.download = "levels.json";
         document.body.appendChild(a);
         a.click();
     }
@@ -49,15 +49,13 @@ export class Data {
 
             const data = jsonAsset.json as LevelsJsonRoot;
             this._levels = Array.isArray(data?.levels) ? [...data.levels] : [];
+            log(this._levels);
             onSuccess?.();
         });
     }
 
     public static getLevel(level: number): LevelData {
-        if (this._levels == null || level < 0 || level >= this._levels.length) {
-            return null;
-        }
-        return this._levels[level] ?? null;
+        return this._levels.find(levelData => levelData.level === level);
     }
 
     public static addNewLevel(level: LevelData): number {

@@ -16,13 +16,13 @@ export class ItemLevel extends Component {
        return this._level;
    }
 
-   init(level: LevelData, number: string) {
-       this.lblLevel.string = `LEVEL ${number}`;
-       this._levelNumb = parseInt(number);
-       this._level = level;
+   init(levelData: LevelData) {
+       this.lblLevel.string = `LEVEL ${levelData.level}`;
+       this._levelNumb = levelData.level;
+       this._level = levelData;
    }
 
-   edit() {
+   onClickEdit() {
        EventManager.instance.emit(Event.EDIT_LEVEL, this._levelNumb);
    }
 
@@ -37,4 +37,6 @@ export class ItemLevel extends Component {
            this.node.active = false;
        }
    }
+
+   
 }

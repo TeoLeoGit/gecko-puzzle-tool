@@ -76,7 +76,7 @@ export class Tool extends Component {
     private _currentGeckoData: GeckoData;
 
     private _editLevelData: LevelData = {
-        level: 0,
+        level: 1,
         width: 16,
         height: 16,
         time: 100,
@@ -99,9 +99,12 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
         EventManager.instance.on(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
+        EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
+
 
         this.initGrid();
         this.init();
+        this.node.active = false;
     }
 
     onDestroy() {
@@ -115,6 +118,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
         EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
         EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
+        EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
     }
 
     onMouseDown(event: EventMouse) {
@@ -193,6 +197,47 @@ export class Tool extends Component {
         return out;
     }
 
+    loadLevel(level: number) {
+        log('check ' + level);
+        const data: LevelData = {...Data.getLevel(level)};
+        log('ok!')
+        log(data);
+        if (!data) return;
+        if (data.height) Global.RowCount = data.height;
+        else Global.RowCount = Config.MAX_ROW;
+        if (data.width) Global.ColCount = data.width;
+        else Global.ColCount = Config.MAX_COLUMN;
+
+        //Clear
+        this._editLevelData = {
+            level: 1,
+            width: 16,
+            height: 16,
+            time: 100,
+            difficulty: '1',
+            cells: [],
+            grounds: [],
+            holes: [],
+            geckos: [],
+            Cover: [],
+        }; //clear ref
+        this.clearDesignMode();
+        this.clearGeckoBodies();
+        this.clearHoles();
+        this._editLevelData = data;
+
+        //Create
+        this.onGridDimChanged(Global.ColCount, Global.RowCount);
+
+        this.node.active = true;
+        this._levelNumb = level;
+        if (data.time) {
+            this.editBoxTime.string = data.time.toString();
+        } else this.editBoxTime.string = '0';
+        log(this._editLevelData);
+        //this.lblLevel.string = `Level ${level}`;
+    }
+
     init() {
         //Drag gecko body
         if (!this._draggedGeckoBody) {
@@ -260,50 +305,12 @@ export class Tool extends Component {
         this.gridParent.setScale(scale, scale, 1);
     }
 
-    loadLevel(level: number) {
-        // const data: LEVEL = {...Data.getLevel(level)};
-        // if (!data) return;
-        // if (data.rowNum) Global.RowCount = data.rowNum;
-        // else Global.RowCount = Config.MAX_ROW;
-        // if (data.colNum) Global.ColCount = data.colNum;
-        // else Global.ColCount = Config.MAX_COLUMN;
-        // this._editLevel = {
-        //     wall_grid: [],
-        //     blocks: [],
-        //     exits: [],
-        //     diff: 1,
-        // }; //clear ref
-        
-        // this.clearBlocks();
-        // this.clearWalls();
-        // this.clearExits();
-        // this.onGridDimChanged(Global.ColCount, Global.RowCount);
-        // this.scheduleOnce(() => {
-        //     this._editLevel = data;
-        //     this.createBlocks(data.blocks);
-        //     this.setWallBackgrounds(data.wall_grid);
-        //     this.hideBlockOutsideOfWall();
-        //     this.initDefaultWall();
-        //     this.createExits(data.exits);
-        //     this.setDiff();
-        // }, 0.4);
-        // this.scheduleOnce(() => {
-        //     this.onClearSelector();
-        // }, 0.6);
-
-        // this.node.active = true;
-        // this._levelNumb = level;
-        // if (data.time) {
-        //     this.editBoxTime.string = data.time.toString();
-        // } else this.editBoxTime.string = '0';
-        // this.lblLevel.string = `Level ${level}`;
-    }
-
     onChangeColor() {
         if (this._draggedGeckoBody) {
             this._draggedGeckoBody.getComponent(GeckoBody).setColor(Global.ColorType);
         }
         if (this._draggedHole) {
+            this._draggedHole.getComponent(Hole).setColor(Global.ColorType);
         }
     }
 
@@ -372,6 +379,7 @@ export class Tool extends Component {
 
         this.scheduleOnce(() => {
             this.clearGeckoBodies();
+            this.clearHoles();
         }, 0.4);
         this.scheduleOnce(() => {
             this.initWalls(col, row);
@@ -383,6 +391,13 @@ export class Tool extends Component {
             child.destroy();
         }
         this.geckoParent.removeAllChildren();
+    }
+
+    clearHoles() {
+        for (const child of this.holeParent.children) {
+            child.destroy();
+        }
+        this.holeParent.removeAllChildren();
     }
 
     //Design Mode
@@ -519,6 +534,7 @@ export class Tool extends Component {
     onChooseGeckoDesignMode() {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             this.clearDesignMode();
+            this.setDataGecko();
             this._draggedGeckoBody.active = false;
             this._sectionBodies = [];
             return;
@@ -652,10 +668,23 @@ export class Tool extends Component {
 
         this._editLevelData.level = this._levelNumb;
         this.setDataCells();
-        this.setDataGecko();
 
         const snapshot = JSON.parse(JSON.stringify(this._editLevelData)) as LevelData;
         Data.mergeLevel(String(this._levelNumb), snapshot);
         Data.saveLevels();
+    }
+
+    onReturnWithoutSave() {
+        this.clearDesignMode();
+        this.node.active = false;
+        EventManager.instance.emit(Event.OPEN_MENU);
+        log(Data.Levels);
+    }
+
+    onSaveLevel() {
+        this.saveData();
+        const id = Data.Levels.findIndex(level => level.level == this._levelNumb);
+        Data.Levels[id] = this._editLevelData;
+        this.onReturnWithoutSave();
     }
 }
