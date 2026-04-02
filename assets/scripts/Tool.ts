@@ -1,12 +1,13 @@
 import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle } from "cc";
 import { Cell } from "./Cell";
-import { Config } from "./Config";
+import { Config, GeckoData, GeckoPart, HoleData, LevelData } from "./Config";
 import { Global } from "./Global";
 import { Event } from './Constant';
 import EventManager from "./EventManager";
-import { DesignMode } from "./Type";
+import { DesignMode, GeckoType, HoleType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
+import { Data } from "./Data";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -66,14 +67,26 @@ export class Tool extends Component {
     private _mousePos: Vec3 = new Vec3();
     private _mouseDown: boolean = false;
     private _grid: Cell[][] = [];
-    private _wallGrid: number[][] = [];
     private _rootCell: Node = null;
-    private _rootWall: Node = null;
-    private _isPainting: boolean = false;
-    private _isDeleteWall: boolean = false;
     private _gridChilds: Node[] = [];
     private _levelNumb: number = 0;
+    private _idGeckoIncrement: number = 0;
+    private _idHoleIncrement:  number = 0;
     private _sectionBodies: GeckoBody[] = [];
+    private _currentGeckoData: GeckoData;
+
+    private _editLevelData: LevelData = {
+        level: 0,
+        width: 16,
+        height: 16,
+        time: 100,
+        difficulty: '1',
+        cells: [],
+        grounds: [],
+        holes: [],
+        geckos: [],
+        Cover: [],
+    };
 
     onLoad() {
         input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
@@ -304,6 +317,7 @@ export class Tool extends Component {
         } else {
             if (parsed > 2 && parsed <= Config.MAX_COLUMN) {
                 Global.ColCount = parsed;
+                this._editLevelData.width = parsed;
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
                 // this._editLevel.blocks = [];
                 // this._editLevel.exits = [];
@@ -320,6 +334,7 @@ export class Tool extends Component {
         } else {
             if (parsed > 2 && parsed <= Config.MAX_ROW) {
                 Global.RowCount = parsed;
+                this._editLevelData.height = parsed;
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
                 // this._editLevel.blocks = [];
                 // this._editLevel.exits = [];
@@ -434,6 +449,7 @@ export class Tool extends Component {
             //     type: 0,
             // }
             // this._editLevel.blocks.push(newBlockData);
+            this.addPartDataToCurrentGecko(bodyComponent)
         } else {
             newBlock.destroy();
         }
@@ -451,13 +467,7 @@ export class Tool extends Component {
             holeComponent.setColor(Global.ColorType);
             holeComponent.setRoot(rootCell.X, rootCell.Y);
 
-            // let newBlockData: BlockData = {
-            //     icon: `PA_Grid_${Global.ShapeId}_${Global.ColorId}`,
-            //     x: rootCell.X,
-            //     y: rootCell.Y,
-            //     type: 0,
-            // }
-            // this._editLevel.blocks.push(newBlockData);
+            this.addHoleData(holeComponent);
         } else {
             newHole.destroy();
         }
@@ -557,5 +567,95 @@ export class Tool extends Component {
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
         Global.DesignMode = DesignMode.None;
+    }
+
+    //Data
+    setDataCells() {
+        const col = Global.ColCount;
+        const row = Global.RowCount;
+        this._editLevelData.cells = [];
+        for (let y = 0; y < row; y++) {
+            let line = '';
+            for (let x = 0; x < col; x++) {
+                line += this._grid[y][x].IsWall ? '1' : '0';
+            }
+            this._editLevelData.cells.push(line);
+        }
+    }
+
+    addPartDataToCurrentGecko(bodyComp: GeckoBody) {
+        const pos = bodyComp.RootPos;
+        const part: GeckoPart = {
+            r: pos.y,
+            c: pos.x,
+        };
+
+        if (this._sectionBodies.length === 1) {
+            this._currentGeckoData = {
+                id: this._idGeckoIncrement,
+                type: GeckoType.Normal,
+                color: Global.ColorType,
+                parts: [part],
+            };
+        } else {
+            this._currentGeckoData.parts!.push(part);
+        }
+    }
+
+    setDataGecko() {
+        if (!this._currentGeckoData?.parts?.length) {
+            return;
+        }
+
+        const data: GeckoData = {
+            ...this._currentGeckoData,
+            parts: [...(this._currentGeckoData.parts ?? [])],
+        };
+
+        const idx = this._editLevelData.geckos.findIndex((g) => g.id === data.id);
+        if (idx !== -1) {
+            this._editLevelData.geckos[idx] = data;
+        } else {
+            this._editLevelData.geckos.push(data);
+            this._idGeckoIncrement++;
+        }
+    }
+
+    addHoleData(hole: Hole) {
+        const pos = hole.RootPos;
+        const data: HoleData = {
+            id: this._idHoleIncrement,
+            type: HoleType.normal,
+            color: hole.ColorType,
+            // HoleData uses (r, c) = (row, col).
+            r: pos.y,
+            c: pos.x,
+            properties: {},
+        };
+
+        this._editLevelData.holes.push(data);
+        this._idHoleIncrement++;
+    }
+
+    saveData() {
+        const timeParsed = Number(this.editBoxTime.string);
+        if (!isNaN(timeParsed)) {
+            this._editLevelData.time = timeParsed;
+        }
+
+        for (let i = 0; i < this.toggleDiff.length; i++) {
+            if (this.toggleDiff[i].isChecked) {
+                this._editLevelData.difficulty = String(i + 1);
+                break;
+            }
+        }
+
+        this._editLevelData.level = this._levelNumb;
+        this.setDataCells();
+        this.setDataGecko();
+
+        const snapshot = JSON.parse(JSON.stringify(this._editLevelData)) as LevelData;
+        Data.mergeLevel(String(this._levelNumb), snapshot);
+        Data.saveLevels();
     }
 }

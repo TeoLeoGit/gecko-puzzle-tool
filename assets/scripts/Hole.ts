@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Sprite } from 'cc';
+import { _decorator, Component, Node, Sprite, Vec2 } from 'cc';
 import { ColorType } from './Type';
 import { getColor } from './Utils';
 const { ccclass, property } = _decorator;
@@ -10,6 +10,15 @@ export class Hole extends Component {
 
     private _x: number;
     private _y: number;
+    private _colorType: ColorType = ColorType.Red;
+
+    public get RootPos(): Vec2 {
+        return new Vec2(this._x, this._y);
+    }   
+
+    public get ColorType(): ColorType {
+        return this._colorType;
+    }
 
     setRoot(x: number, y: number) {
         this._x = x;
@@ -17,6 +26,7 @@ export class Hole extends Component {
     }
     
     setColor(color: ColorType) {
+        this._colorType = color;
         this.sprHole.color = getColor(color);
     }
 }

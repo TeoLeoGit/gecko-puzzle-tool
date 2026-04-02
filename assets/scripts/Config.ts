@@ -1,6 +1,6 @@
 
 import { Node } from "cc";
-import { CarryItemType, ColorType, DifficultyType, GeckoType } from "./Type";
+import { CarryItemType, ColorType, GeckoType, HoleType } from "./Type";
 
 export class Config {
   public static MAX_ROW = 16;
@@ -8,14 +8,15 @@ export class Config {
 }
 
 export interface GeckoPart {
-  [key: string]: unknown;
+  r: number,
+  c: number,
 }
 
 export interface CoverData {
   [key: string]: unknown;
 }
 
-export interface CarryItemData {
+export type CarryItemData = {
   type: CarryItemType;
   geckoId: number;
   idUnlockGecko: number;
@@ -23,7 +24,7 @@ export interface CarryItemData {
   keyConsumeAmount: number;
 }
 
-export interface SpecialGeckoData {
+export type SpecialGeckoData = {
   // stack gecko
   stackColors: ColorType[];
   // hidden gecko
@@ -33,12 +34,12 @@ export interface SpecialGeckoData {
   connectedGeckoIds: number[];
 }
 
-export interface GeckoProperties {
+export type GeckoProperties = {
   carryItem?: CarryItemData;
   specialGecko?: SpecialGeckoData;
 }
 
-export interface GeckoDataJson {
+export type GeckoData = {
   id: number;
   type: GeckoType;
   color: ColorType;
@@ -48,17 +49,21 @@ export interface GeckoDataJson {
   layers?: CoverData[];
 }
 
-export interface GeckoData {
+export type HoleData = {
   id: number;
-  type: GeckoType;
+  type: HoleType;
   color: ColorType;
-  colorType: ColorType;
-  properties?: GeckoProperties;
-  parts?: GeckoPart[];
-  covers: CoverData[];
+  r: number;
+  c: number;
+  properties: HoleProperties;
+  covers?: CoverData;
 }
 
-export interface LevelData {
+export type HoleProperties = {
+
+}
+
+export type LevelData = {
   level: number;
   time: number;
   difficulty: string;
@@ -66,31 +71,9 @@ export interface LevelData {
   height: number;
   cells: string[];
   grounds: [];
-  holes: [];
+  holes: HoleData[];
   geckos: GeckoData[];
   Cover: [];
-}
-
-export function normalizeGeckoData(input: GeckoDataJson): GeckoData {
-  // Precedence:
-  // - if `Cover` is present use it
-  // - else if legacy `layers` is present use it
-  // - else default to empty list
-  const covers = Array.isArray(input.Cover)
-    ? input.Cover
-    : Array.isArray(input.layers)
-      ? input.layers
-      : [];
-
-  return {
-    id: input.id,
-    type: input.type,
-    color: input.color,
-    colorType: input.color,
-    properties: input.properties,
-    parts: input.parts,
-    covers,
-  };
 }
 
 export type InputDeleteGridObject = {
