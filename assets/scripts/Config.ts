@@ -1,6 +1,7 @@
 
 import { Node } from "cc";
 import { CarryItemType, ColorType, GeckoType, HoleType } from "./Type";
+import { GeckoBody } from "./GeckoBody";
 
 export class Config {
   public static MAX_ROW = 16;
@@ -26,12 +27,12 @@ export type CarryItemData = {
 
 export type SpecialGeckoData = {
   // stack gecko
-  stackColors: ColorType[];
+  stackColors?: ColorType[];
   // hidden gecko
-  hiddenColor: ColorType;
-  unlockNumber: number;
+  hiddenColor?: ColorType;
+  unlockNumber?: number;
   // connected gecko: array of gecko IDs in the connection chain
-  connectedGeckoIds: number[];
+  connectedGeckoIds?: number[];
 }
 
 export type GeckoProperties = {
@@ -81,4 +82,11 @@ export type InputDeleteGridObject = {
   y: number,
   icon: string,
   rootObj: Node
+}
+
+export type InputSpecialGeckoPopup = {
+  geckoData: GeckoData;
+  geckoParts: GeckoBody[];
+  specialType: GeckoType;
+  data: SpecialGeckoData;
 }

@@ -78,6 +78,7 @@ export class Tool extends Component {
     private _idHoleIncrement:  number = 0;
     private _sectionBodies: GeckoBody[] = [];
     private _currentGeckoData: GeckoData;
+    private _mapGeckoIdAndParts: Map<number, GeckoBody[]> = new Map();
 
     private _editLevelData: LevelData = {
         level: 1,
@@ -184,7 +185,7 @@ export class Tool extends Component {
             this.previewLayer.addChild(body);
             const bodyPos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
             body.setPosition(bodyPos);
-            body.getComponent(GeckoBody).disableBtn();
+            body.getComponent(GeckoBody).removeBtn();
             this._draggedGeckoBody = body;
         }
         if (!this._draggedHole) {
@@ -287,6 +288,7 @@ export class Tool extends Component {
         this._sectionBodies = [];
         this._currentGeckoData = null;
         this._idGeckoIncrement = 0;
+        this._mapGeckoIdAndParts.clear();
 
         if (geckoData.length === 0) {
             return;
@@ -317,15 +319,20 @@ export class Tool extends Component {
 
                 const bodyComponent = bodyNode.getComponent(GeckoBody);
                 bodyComponent.setRoot(col, row);
+                bodyComponent.setGeckoId(gecko.id);
                 bodyComponent.setColor(gecko.color);
 
                 if (prevBody) {
                     bodyComponent.setDirection(prevBody.RootPos);
                 } else {
-                    bodyComponent.setHead();
-                    bodyComponent.nodeArrow.getComponent(Sprite).color = getColor(gecko.color);
+                    bodyComponent.setHead(gecko.color);
                 }
 
+                if (i === 1 && prevBody) {
+                    prevBody.setHeadLookDirection(bodyComponent.RootPos);
+                }
+
+                this.addGeckoPartToMap(gecko.id, bodyComponent);
                 prevBody = bodyComponent;
             }
         }
@@ -479,11 +486,35 @@ export class Tool extends Component {
         }
     }
 
+    onDifficultyChange(toggle?: Toggle, customEventData?: string) {
+        if (toggle && !toggle.isChecked) {
+            return;
+        }
+
+        let difficulty = 1;
+
+        if (customEventData !== undefined && customEventData !== '') {
+            const parsed = Number(customEventData);
+            if (!isNaN(parsed)) {
+                difficulty = parsed;
+            }
+        } else if (toggle) {
+            const idx = this.toggleDiff.indexOf(toggle);
+            if (idx !== -1) {
+                difficulty = idx + 1;
+            }
+        }
+
+        difficulty = Math.max(1, Math.min(3, difficulty));
+        this._editLevelData.difficulty = String(difficulty);
+    }
+
     clearGeckoBodies() {
         for (const child of this.geckoParent.children) {
             child.destroy();
         }
         this.geckoParent.removeAllChildren();
+        this._mapGeckoIdAndParts.clear();
     }
 
     clearHoles() {
@@ -541,14 +572,19 @@ export class Tool extends Component {
             this.geckoParent.addChild(newBlock);
             newBlock.setWorldPosition(position);
             const bodyComponent = newBlock.getComponent(GeckoBody);
+            bodyComponent.setGeckoId(this._idGeckoIncrement);
             bodyComponent.setColor(Global.ColorType);
             bodyComponent.setRoot(rootCell.X, rootCell.Y);
             if (this._sectionBodies.length > 0) {
+                if (this._sectionBodies.length === 1) {
+                    this._sectionBodies[0].setHeadLookDirection(bodyComponent.RootPos);
+                }
                 bodyComponent.setDirection(this._sectionBodies[this._sectionBodies.length - 1].RootPos);
             } else {
-                bodyComponent.setHead();
+                bodyComponent.setHead(Global.ColorType);
             }
             this._sectionBodies.push(bodyComponent);
+            this.addGeckoPartToMap(this._idGeckoIncrement, bodyComponent);
 
             this.addPartDataToCurrentGecko(bodyComponent)
         } else {
@@ -703,6 +739,12 @@ export class Tool extends Component {
         } else {
             this._currentGeckoData.parts!.push(part);
         }
+    }
+
+    private addGeckoPartToMap(geckoId: number, bodyComp: GeckoBody) {
+        const geckoParts = this._mapGeckoIdAndParts.get(geckoId) ?? [];
+        geckoParts.push(bodyComp);
+        this._mapGeckoIdAndParts.set(geckoId, geckoParts);
     }
 
     setDataGecko() {

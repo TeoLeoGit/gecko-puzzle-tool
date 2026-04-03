@@ -50,7 +50,6 @@ export class Data {
 
             const data = jsonAsset.json as LevelsJsonRoot;
             this._levels = Array.isArray(data?.levels) ? [...data.levels] : [];
-            log(this._levels);
             onSuccess?.();
         });
     }
