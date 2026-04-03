@@ -1,4 +1,4 @@
-import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle } from "cc";
+import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle, Label } from "cc";
 import { Cell } from "./Cell";
 import { Config, GeckoData, GeckoPart, HoleData, LevelData } from "./Config";
 import { Global } from "./Global";
@@ -8,6 +8,7 @@ import { DesignMode, GeckoType, HoleType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 import { Data } from "./Data";
+import { getColor } from "./Utils";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -59,6 +60,9 @@ export class Tool extends Component {
     @property(EditBox)
     editBoxTime: EditBox = null!;
 
+    @property(Label)
+    lblLevel: Label = null!;
+
     @property(Toggle)
     toggleDiff: Toggle[] = [];
     
@@ -101,7 +105,6 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
         EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
 
-
         this.initGrid();
         this.init();
         this.node.active = false;
@@ -136,14 +139,6 @@ export class Tool extends Component {
     
     onMouseUp(event: EventMouse) {
         this._mouseDown = false;
-
-        // if (this._isCreateBody) {
-            // const snappedPos = this.getClosestGridPosition(this._draggedBlock.worldPosition);
-            // if (snappedPos) this.createBlockAt(snappedPos);
-        // } else if (this._isCreateHole) {
-            // const snappedPos = this.getClosestWallPosition(this._draggedExit.worldPosition);
-            // if (snappedPos) this.createExitAt(snappedPos);
-        // }
     }
     
     onMouseMove(event: EventMouse) {
@@ -160,14 +155,6 @@ export class Tool extends Component {
         }
 
         if (!this._mouseDown) return;
-        // if (this._isPainting && this._mouseDown) {
-        //     //this.paintWallUnderPointer(event);
-        //     return;
-        // }
-        // if (this._isDeleteWall && this._mouseDown) {
-        //     //this.deleteWallUnderPointer(event);
-        //     return;
-        // }
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
@@ -180,58 +167,12 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.DeleteWall) {
             this.deleteWall(event);
         }
-        // if (this._isCreateBody && this._draggedGeckoBody) {
-        //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
-        //     this._draggedGeckoBody.setWorldPosition(worldPos);
-        //     this._mousePos = worldPos;
-        // } else if (this._isCreateHole && this._draggedHole) {
-        //     const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
-        //     this._draggedHole.setWorldPosition(worldPos);
-        //     this._mousePos = worldPos;
-        // }
     }
 
     screenToWorld(screenPos: Vec3): Vec3 {
         const out = new Vec3();
         this.mainCamera.screenToWorld(screenPos, out);
         return out;
-    }
-
-    loadLevel(level: number) {
-        const data: LevelData = {...Data.getLevel(level)};
-        if (!data) return;
-        if (data.height) Global.RowCount = data.height;
-        else Global.RowCount = Config.MAX_ROW;
-        if (data.width) Global.ColCount = data.width;
-        else Global.ColCount = Config.MAX_COLUMN;
-
-        //Clear
-        this._editLevelData = {
-            level: 1,
-            width: 16,
-            height: 16,
-            time: 100,
-            difficulty: '1',
-            cells: [],
-            grounds: [],
-            holes: [],
-            geckos: [],
-            Cover: [],
-        }; //clear ref
-        this.clearDesignMode();
-        this.clearGeckoBodies();
-        this.clearHoles();
-        this._editLevelData = data;
-
-        //Create
-        this.onGridDimChanged(Global.ColCount, Global.RowCount);
-
-        this.node.active = true;
-        this._levelNumb = level;
-        if (data.time) {
-            this.editBoxTime.string = data.time.toString();
-        } else this.editBoxTime.string = '0';
-        //this.lblLevel.string = `Level ${level}`;
     }
 
     init() {
@@ -299,6 +240,156 @@ export class Tool extends Component {
         const scale = 1 - 0.4 * eased; // 1 -> 0.6
 
         this.gridParent.setScale(scale, scale, 1);
+    }
+
+    loadLevel(level: number) {
+        const data: LevelData = {...Data.getLevel(level)};
+        if (!data) return;
+        if (data.height) Global.RowCount = data.height;
+        else Global.RowCount = Config.MAX_ROW;
+        if (data.width) Global.ColCount = data.width;
+        else Global.ColCount = Config.MAX_COLUMN;
+
+        //Clear
+        this._editLevelData = {
+            level: 1,
+            width: 16,
+            height: 16,
+            time: 100,
+            difficulty: '1',
+            cells: [],
+            grounds: [],
+            holes: [],
+            geckos: [],
+            Cover: [],
+        }; //clear ref
+        this._editLevelData = data;
+
+        //Create
+        this.onGridDimChanged(Global.ColCount, Global.RowCount);
+        this.loadWallCells(data.cells);
+        this.scheduleOnce(() => {
+            this.loadGeckos(data.geckos);
+            this.loadHoles(data.holes);
+        }, 0.3);
+
+        this.node.active = true;
+        this._levelNumb = level;
+        if (data.time) {
+            this.editBoxTime.string = data.time.toString();
+        } else this.editBoxTime.string = '0';
+        this.lblLevel.string = `Level ${level}`;
+    }
+
+    loadGeckos(geckoData: GeckoData[]) {
+        this._sectionBodies = [];
+        this._currentGeckoData = null;
+        this._idGeckoIncrement = 0;
+
+        if (geckoData.length === 0) {
+            return;
+        }
+
+        let maxGeckoId = -1;
+        for (const gecko of geckoData) {
+            if (!gecko?.parts?.length) continue;
+
+            maxGeckoId = Math.max(maxGeckoId, gecko.id ?? -1);
+            let prevBody: GeckoBody | null = null;
+
+            for (let i = 0; i < gecko.parts.length; i++) {
+                const part = gecko.parts[i];
+                const row = part.r;
+                const col = part.c;
+                const cell = this._grid[row]?.[col];
+                if (!cell || !cell.node.active || cell.IsWall || !cell.IsEmpty) {
+                    continue;
+                }
+
+                const bodyNode = instantiate(this.bodyGeckoPrefab);
+                this.geckoParent.addChild(bodyNode);
+                bodyNode.setWorldPosition(cell.node.worldPosition);
+
+                cell.IsEmpty = false;
+                cell.setContainForGeckoBody(bodyNode);
+
+                const bodyComponent = bodyNode.getComponent(GeckoBody);
+                bodyComponent.setRoot(col, row);
+                bodyComponent.setColor(gecko.color);
+
+                if (prevBody) {
+                    bodyComponent.setDirection(prevBody.RootPos);
+                } else {
+                    bodyComponent.setHead();
+                    bodyComponent.nodeArrow.getComponent(Sprite).color = getColor(gecko.color);
+                }
+
+                prevBody = bodyComponent;
+            }
+        }
+
+        this._idGeckoIncrement = maxGeckoId + 1;
+    }
+
+    loadHoles(holeData: HoleData[]) {
+        this._idHoleIncrement = 0;
+
+        if (!Array.isArray(holeData) || holeData.length === 0) {
+            return;
+        }
+
+        let maxHoleId = -1;
+        for (const hole of holeData) {
+            const row = hole?.r;
+            const col = hole?.c;
+            const cell = this._grid[row]?.[col];
+
+            maxHoleId = Math.max(maxHoleId, hole?.id ?? -1);
+            if (!cell || !cell.node.active || cell.IsWall || !cell.IsEmpty) {
+                continue;
+            }
+
+            const holeNode = instantiate(this.holePrefab);
+            this.holeParent.addChild(holeNode);
+            holeNode.setWorldPosition(cell.node.worldPosition);
+
+            cell.IsEmpty = false;
+            cell.setContainForGeckoBody(holeNode);
+
+            const holeComponent = holeNode.getComponent(Hole);
+            holeComponent.setRoot(col, row);
+            holeComponent.setColor(hole.color);
+        }
+
+        this._idHoleIncrement = maxHoleId + 1;
+    }
+
+    loadWallCells(cells: string[]) {
+        if (!Array.isArray(cells) || cells.length === 0) {
+            this.initWalls(Global.ColCount, Global.RowCount);
+            return;
+        }
+
+        const rowCount = Math.min(Global.RowCount, cells.length);
+        const rowsFromBottom = [...cells].reverse();
+
+        for (let y = 0; y < rowCount; y++) {
+            const rowData = rowsFromBottom[y] ?? "";
+            const colCount = Math.min(Global.ColCount, rowData.length);
+
+            for (let x = 0; x < colCount; x++) {
+                const cell = this._grid[y]?.[x];
+                if (!cell || !cell.node.active) {
+                    continue;
+                }
+
+                if (rowData[x] === '1') {
+                    cell.setWall();
+                } else {
+                    cell.deleteWall();
+                }
+            }
+        }
     }
 
     onChangeColor() {
@@ -369,13 +460,9 @@ export class Tool extends Component {
 
         this.gridParent.position = new Vec3(64 + (Config.MAX_COLUMN - col) * 10, -406 + (Config.MAX_ROW - row) * 50);
 
-        this.scheduleOnce(() => {
-            this.clearGeckoBodies();
-            this.clearHoles();
-        }, 0.4);
-        this.scheduleOnce(() => {
-            this.initWalls(col, row);
-        }, 0.6);
+        this.clearGeckoBodies();
+        this.clearHoles();
+        this.initWalls(col, row);
     }
 
     clearGeckoBodies() {
@@ -449,13 +536,6 @@ export class Tool extends Component {
             }
             this._sectionBodies.push(bodyComponent);
 
-            // let newBlockData: BlockData = {
-            //     icon: `PA_Grid_${Global.ShapeId}_${Global.ColorId}`,
-            //     x: rootCell.X,
-            //     y: rootCell.Y,
-            //     type: 0,
-            // }
-            // this._editLevel.blocks.push(newBlockData);
             this.addPartDataToCurrentGecko(bodyComponent)
         } else {
             newBlock.destroy();
@@ -620,7 +700,7 @@ export class Tool extends Component {
             ...this._currentGeckoData,
             parts: [...(this._currentGeckoData.parts ?? [])],
         };
-        log('heko')
+        log('geko')
         const idx = this._editLevelData.geckos.findIndex((g) => g.id === data.id);
         if (idx !== -1) {
             this._editLevelData.geckos[idx] = data;
@@ -670,6 +750,8 @@ export class Tool extends Component {
 
     onReturnWithoutSave() {
         this.clearDesignMode();
+        this.clearHoles();
+        this.clearGeckoBodies();
         this.node.active = false;
         EventManager.instance.emit(Event.OPEN_MENU);
     }

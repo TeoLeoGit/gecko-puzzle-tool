@@ -36112,6 +36112,9 @@
     "editBoxTime": {
       "__id__": 2279
     },
+    "lblLevel": {
+      "__id__": 2283
+    },
     "toggleDiff": [],
     "_id": "28tpk195xDCr6wKD7fqegk"
   },
@@ -36179,7 +36182,7 @@
         "__id__": 2363
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 2370
