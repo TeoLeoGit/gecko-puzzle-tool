@@ -198,10 +198,7 @@ export class Tool extends Component {
     }
 
     loadLevel(level: number) {
-        log('check ' + level);
         const data: LevelData = {...Data.getLevel(level)};
-        log('ok!')
-        log(data);
         if (!data) return;
         if (data.height) Global.RowCount = data.height;
         else Global.RowCount = Config.MAX_ROW;
@@ -234,7 +231,6 @@ export class Tool extends Component {
         if (data.time) {
             this.editBoxTime.string = data.time.toString();
         } else this.editBoxTime.string = '0';
-        log(this._editLevelData);
         //this.lblLevel.string = `Level ${level}`;
     }
 
@@ -326,8 +322,6 @@ export class Tool extends Component {
                 Global.ColCount = parsed;
                 this._editLevelData.width = parsed;
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
-                // this._editLevel.blocks = [];
-                // this._editLevel.exits = [];
             }
         }
     }
@@ -343,8 +337,6 @@ export class Tool extends Component {
                 Global.RowCount = parsed;
                 this._editLevelData.height = parsed;
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
-                // this._editLevel.blocks = [];
-                // this._editLevel.exits = [];
             }
         }
     }
@@ -534,16 +526,13 @@ export class Tool extends Component {
     onChooseGeckoDesignMode() {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             this.clearDesignMode();
-            this.setDataGecko();
             this._draggedGeckoBody.active = false;
-            this._sectionBodies = [];
             return;
         }
 
         this.clearDesignMode();
         this._draggedGeckoBody.active = true;
         this.btnDesginGecko.getChildByName("Sprite_check").active = true;
-        this._sectionBodies = [];
         Global.DesignMode = DesignMode.CreateGecko;
     }
 
@@ -583,6 +572,9 @@ export class Tool extends Component {
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
         Global.DesignMode = DesignMode.None;
+
+        //set gecko
+        if (this._sectionBodies.length > 0) this.setDataGecko();
     }
 
     //Data
@@ -635,6 +627,7 @@ export class Tool extends Component {
             this._editLevelData.geckos.push(data);
             this._idGeckoIncrement++;
         }
+        this._sectionBodies = [];
     }
 
     addHoleData(hole: Hole) {
@@ -670,21 +663,17 @@ export class Tool extends Component {
         this.setDataCells();
 
         const snapshot = JSON.parse(JSON.stringify(this._editLevelData)) as LevelData;
-        Data.mergeLevel(String(this._levelNumb), snapshot);
-        Data.saveLevels();
+        Data.mergeLevel(this._levelNumb, snapshot);
     }
 
     onReturnWithoutSave() {
         this.clearDesignMode();
         this.node.active = false;
         EventManager.instance.emit(Event.OPEN_MENU);
-        log(Data.Levels);
     }
 
     onSaveLevel() {
         this.saveData();
-        const id = Data.Levels.findIndex(level => level.level == this._levelNumb);
-        Data.Levels[id] = this._editLevelData;
         this.onReturnWithoutSave();
     }
 }

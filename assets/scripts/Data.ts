@@ -13,15 +13,16 @@ export class Data {
         return this._levels;
     }
 
-    public static mergeLevel(levelNumb: string | number, level: LevelData) {
-        const idx = Number(levelNumb);
-        if (isNaN(idx) || idx < 0) {
-            return;
-        }
+    public static mergeLevel(levelNumb: number, level: LevelData) {
+        const idx = this._levels.findIndex(dataLevel => dataLevel.level === levelNumb);
         if (!this._levels) {
             this._levels = [];
         }
-        this._levels[idx] = level;
+        if (idx >= 0) {
+            this._levels[idx] = level;
+        } else {
+            this._levels.push(level);
+        }
     }
 
     public static saveLevels() {
