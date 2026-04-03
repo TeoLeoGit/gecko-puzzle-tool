@@ -589,6 +589,7 @@ export class Tool extends Component {
             }
             this._editLevelData.cells.push(line);
         }
+        this._editLevelData.cells.reverse();
     }
 
     addPartDataToCurrentGecko(bodyComp: GeckoBody) {
@@ -619,13 +620,14 @@ export class Tool extends Component {
             ...this._currentGeckoData,
             parts: [...(this._currentGeckoData.parts ?? [])],
         };
-
+        log('heko')
         const idx = this._editLevelData.geckos.findIndex((g) => g.id === data.id);
         if (idx !== -1) {
             this._editLevelData.geckos[idx] = data;
         } else {
             this._editLevelData.geckos.push(data);
             this._idGeckoIncrement++;
+            log('new gecko!');
         }
         this._sectionBodies = [];
     }
