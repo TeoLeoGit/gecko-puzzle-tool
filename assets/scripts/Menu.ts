@@ -52,7 +52,7 @@ export class Menu extends Component {
 
     addNewLevel() {
         let newLevel: LevelData = {
-            level: Data.Levels.length,
+            level: Data.nextLevelId(),
             width: 16,
             height: 16,
             time: 100,

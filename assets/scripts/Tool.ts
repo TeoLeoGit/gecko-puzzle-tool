@@ -99,6 +99,7 @@ export class Tool extends Component {
 
         this.editBoxCol.node.on(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
         this.editBoxRow.node.on(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
+        this.editBoxTime.node.on(EditBox.EventType.TEXT_CHANGED, this.onTimeChanged, this);
 
         EventManager.instance.on(Event.CHANGE_COLOR, this.onChangeColor, this);
         EventManager.instance.on(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
@@ -117,6 +118,7 @@ export class Tool extends Component {
 
         this.editBoxCol.node.off(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
         this.editBoxRow.node.off(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
+        this.editBoxTime.node.off(EditBox.EventType.TEXT_CHANGED, this.onTimeChanged, this);
 
         EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
         EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
@@ -463,6 +465,18 @@ export class Tool extends Component {
         this.clearGeckoBodies();
         this.clearHoles();
         this.initWalls(col, row);
+    }
+
+    onTimeChanged(editBox: EditBox) {
+        const value = editBox.string;
+        const parsed = Number(value);
+
+        if (isNaN(parsed) && parsed < 0) {
+            log(`Invalid number: "${value}"`);
+        } else {
+            this._editLevelData.time = parsed;
+            log(`Time changed: ${this._editLevelData.time}`);
+        }
     }
 
     clearGeckoBodies() {

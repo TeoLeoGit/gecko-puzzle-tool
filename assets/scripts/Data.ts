@@ -84,4 +84,8 @@ export class Data {
         this._levels[fLevel] = this._levels[sLevel];
         this._levels[sLevel] = temp;
     }
+
+    public static nextLevelId(): number {
+        return this._levels.length + 1;
+    }
 }
