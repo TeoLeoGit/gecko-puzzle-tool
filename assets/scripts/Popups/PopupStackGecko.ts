@@ -1,10 +1,11 @@
-import { _decorator, Button, Component, Event as CocosEvent, Node, Sprite, UITransform } from 'cc';
+import { _decorator, Button, Component, Event as CocosEvent, Node, Sprite, UITransform, log } from 'cc';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 import { InputSpecialGeckoPopup } from '../Config';
-import { ColorType } from '../Type';
+import { ColorType, GeckoType } from '../Type';
 import { getColor, setSprite } from '../Utils';
 import { ButtonChangeColor } from '../ButtonChangeColor';
+import { SpecialGeckoHandler } from '../SpecialGeckoHandler';
 const { ccclass, property } = _decorator;
 
 @ccclass('PopupStackGecko')
@@ -17,9 +18,11 @@ export class PopupStackGecko extends Component {
 
     private _chosenColors: ColorType[] = [];
     private _lockedColor: ColorType | null = null;
+    private _inputData: InputSpecialGeckoPopup | null = null;
 
     protected onLoad(): void {
         EventManager.instance.on(Event.OPEN_POPUP_STACK_GECKO, this.onShow, this);
+        this.node.active = false;
     }
 
     protected onDestroy(): void {
@@ -28,7 +31,9 @@ export class PopupStackGecko extends Component {
 
     onShow(input: InputSpecialGeckoPopup) {
         this.resetSelectionState();
+        this._inputData = input;
         this.node.active = true;
+        log(input)
 
         const geckoColor = input?.geckoData?.color;
         if (geckoColor == null) {
@@ -52,6 +57,11 @@ export class PopupStackGecko extends Component {
     }
 
     onClickClose() {
+        if (this._inputData?.geckoData) {
+            this._inputData.geckoData.type = GeckoType.Stacked;
+            this._inputData.data.stackColors = [...this._chosenColors.slice(1, 3)];
+            SpecialGeckoHandler.addSpecialGecko(this._inputData);
+        }
         this.node.active = false;
     }
 
@@ -139,8 +149,8 @@ export class PopupStackGecko extends Component {
 
     private getButtonByColor(colorType: ColorType): Button | null {
         for (const button of this.btnChoseColors) {
-            const colorId = button.node.getComponent(ButtonChangeColor)?.colorId;
-            if (colorId === colorType) {
+            const colorId = Number(button.clickEvents[0]?.customEventData);
+            if (!Number.isNaN(colorId) && colorId === colorType) {
                 return button;
             }
         }

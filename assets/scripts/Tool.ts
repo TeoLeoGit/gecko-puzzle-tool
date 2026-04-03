@@ -1,6 +1,6 @@
 import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle, Label } from "cc";
 import { Cell } from "./Cell";
-import { Config, GeckoData, GeckoPart, HoleData, LevelData } from "./Config";
+import { Config, GeckoData, GeckoPart, HoleData, InputSpecialGeckoPopup, LevelData } from "./Config";
 import { Global } from "./Global";
 import { Event } from './Constant';
 import EventManager from "./EventManager";
@@ -41,6 +41,9 @@ export class Tool extends Component {
 
     @property(Node)
     btnDesginWall: Node = null!;
+
+    @property(Node)
+    btnDesginSpecialType: Node = null!;
 
     @property(Prefab)
     cellPrefab: Prefab = null!;
@@ -106,6 +109,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
         EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
+        EventManager.instance.on(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
 
         this.initGrid();
         this.init();
@@ -125,6 +129,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
         EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
         EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
+        EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
     }
 
     onMouseDown(event: EventMouse) {
@@ -695,13 +700,48 @@ export class Tool extends Component {
         Global.DesignMode = DesignMode.DeleteWall;
     }
 
+    onChooseSpecialTypeMode() {
+        this.clearDesignMode();
+        this.btnDesginSpecialType.getChildByName("Sprite_check").active = true;
+        for (const geckoParts of this._mapGeckoIdAndParts.values()) {
+            for (const bodyPart of geckoParts) {
+                bodyPart.enableBtn();
+            }
+        }
+
+    }
+
+    onShowPopupSpecialGecko(geckoId: number) {
+        const geckoData = this._editLevelData.geckos.find((gecko) => gecko.id === geckoId);
+        if (!geckoData) {
+            return;
+        }
+
+        const input: InputSpecialGeckoPopup = {
+            geckoData,
+            geckoParts: this._mapGeckoIdAndParts.get(geckoId),
+            specialType: geckoData.type,
+            data: geckoData.properties?.specialGecko ?? {},
+        };
+
+        EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
+    }
+
     clearDesignMode() {
         this._draggedGeckoBody.active = false;
         this._draggedHole.active = false;
         this.btnDesginHole.getChildByName("Sprite_check").active = false;
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
+        this.btnDesginSpecialType.getChildByName("Sprite_check").active = false;
+
         Global.DesignMode = DesignMode.None;
+
+        for (const geckoParts of this._mapGeckoIdAndParts.values()) {
+            for (const bodyPart of geckoParts) {
+                bodyPart.disableBtn();
+            }
+        }
 
         //set gecko
         if (this._sectionBodies.length > 0) this.setDataGecko();

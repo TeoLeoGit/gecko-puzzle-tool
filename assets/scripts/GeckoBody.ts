@@ -1,4 +1,6 @@
-import { _decorator, Button, Component, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
+import { _decorator, Button, Component, log, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
+import { Event } from './Constant';
+import EventManager from './EventManager';
 import { ColorType } from './Type';
 import { getColor, setSprite } from './Utils';
 const { ccclass, property } = _decorator;
@@ -78,8 +80,8 @@ export class GeckoBody extends Component {
     }
 
     onClickAddSpecialGecko() {
-        //open popup
-        //done popup -> handler -> change view and change data.
+        EventManager.instance.emit(Event.ON_CHANGE_GECKO_TO_SPECIAL, this._geckoId);
+        log('ok')
     }
 }
 
