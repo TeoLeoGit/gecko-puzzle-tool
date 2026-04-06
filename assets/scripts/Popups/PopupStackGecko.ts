@@ -21,12 +21,12 @@ export class PopupStackGecko extends Component {
     private _inputData: InputSpecialGeckoPopup | null = null;
 
     protected onLoad(): void {
-        EventManager.instance.on(Event.OPEN_POPUP_STACK_GECKO, this.onShow, this);
+        EventManager.instance.on(Event.SHOW_POPUP_STACK_GECKO, this.onShow, this);
         this.node.active = false;
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.OPEN_POPUP_STACK_GECKO, this.onShow);
+        EventManager.instance.off(Event.SHOW_POPUP_STACK_GECKO, this.onShow);
     }
 
     onShow(input: InputSpecialGeckoPopup) {
@@ -61,10 +61,11 @@ export class PopupStackGecko extends Component {
             if (!this._inputData.geckoData.properties) {
                 this._inputData.geckoData.properties = {};
             }
-            this._inputData.geckoData.properties.specialGecko = this._inputData.data;
-            this._inputData.data.stackColors = [...this._chosenColors.slice(1, 3)];
+            this._inputData.geckoData.properties.specialGecko = this._inputData.dataSpecialGecko;
+            this._inputData.dataSpecialGecko.stackColors = [...this._chosenColors.slice(1, 3)];
             SpecialGeckoHandler.addSpecialGecko(this._inputData);
         }
+        EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
         this.node.active = false;
     }
 

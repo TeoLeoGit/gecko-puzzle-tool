@@ -1,14 +1,13 @@
 import { Node, Sprite } from 'cc';
 import { InputSpecialGeckoPopup } from './Config';
-import { GeckoType } from './Type';
-import { GeckoBody } from './GeckoBody';
+import { ColorType, GeckoType } from './Type';
 import { getColor, setSprite } from './Utils';
 
 export class SpecialGeckoHandler {
     public static addSpecialGecko(input: InputSpecialGeckoPopup) {
         //Stacked gecko
         if (input.geckoData.type === GeckoType.Stacked) {
-            const stackColors = input.data.stackColors ?? [];
+            const stackColors = input.dataSpecialGecko.stackColors ?? [];
             for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
                 const geckoBody = input.geckoParts[bodyIndex];
                 const rootNode = geckoBody.node;
@@ -33,6 +32,12 @@ export class SpecialGeckoHandler {
 
                     rootNode.addChild(stackNode);
                 }
+            }
+        }
+
+        if (input.geckoData.type === GeckoType.Hidden) {
+            for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
+                input.geckoParts[bodyIndex].setColor(ColorType.Hidden);
             }
         }
     }

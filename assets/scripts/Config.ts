@@ -29,7 +29,6 @@ export type SpecialGeckoData = {
   // stack gecko
   stackColors?: ColorType[];
   // hidden gecko
-  hiddenColor?: ColorType;
   unlockNumber?: number;
   // connected gecko: array of gecko IDs in the connection chain
   connectedGeckoIds?: number[];
@@ -88,5 +87,5 @@ export type InputSpecialGeckoPopup = {
   geckoData: GeckoData;
   geckoParts: GeckoBody[];
   specialType: GeckoType;
-  data: SpecialGeckoData;
+  dataSpecialGecko: SpecialGeckoData;
 }

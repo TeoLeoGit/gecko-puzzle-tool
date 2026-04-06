@@ -364,7 +364,7 @@ export class Tool extends Component {
             geckoData,
             geckoParts,
             specialType: geckoData.type,
-            data: geckoData.properties?.specialGecko ?? {},
+            dataSpecialGecko: geckoData.properties?.specialGecko ?? {},
         };
 
         SpecialGeckoHandler.addSpecialGecko(input);
@@ -845,7 +845,7 @@ export class Tool extends Component {
             geckoData,
             geckoParts: this._mapGeckoIdAndParts.get(geckoId),
             specialType: geckoData.type,
-            data: geckoData.properties.specialGecko,
+            dataSpecialGecko: geckoData.properties.specialGecko,
         };
 
         EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
