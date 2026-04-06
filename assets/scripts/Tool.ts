@@ -1,4 +1,4 @@
-import { _decorator, Camera, Component, EventMouse, Input, input, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle, Label } from "cc";
+import { _decorator, Camera, Component, EventKeyboard, EventMouse, Input, input, KeyCode, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle, Label } from "cc";
 import { Cell } from "./Cell";
 import { Config, GeckoData, GeckoPart, HoleData, InputSpecialGeckoPopup, LevelData } from "./Config";
 import { Global } from "./Global";
@@ -104,6 +104,7 @@ export class Tool extends Component {
         input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
         input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+        input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
 
         this.editBoxCol.node.on(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
         this.editBoxRow.node.on(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
@@ -124,6 +125,7 @@ export class Tool extends Component {
         input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
         input.off(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+        input.off(Input.EventType.KEY_DOWN, this.onKeyDown, this);
 
         this.editBoxCol.node.off(EditBox.EventType.TEXT_CHANGED, this.onColumnChanged, this);
         this.editBoxRow.node.off(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
@@ -142,15 +144,90 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
+            return;
         }
         if (Global.DesignMode === DesignMode.CreateHole) {
             const snappedPos = this.getClosestGridPosition(this._draggedHole.worldPosition);
             if (snappedPos) this.createHoleAt(snappedPos);
+            return;
+        }
+        if (Global.DesignMode === DesignMode.DeleteHole) {
+            const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this.deleteHole(snappedPos);
+            return;
         }
     }
     
     onMouseUp(event: EventMouse) {
         this._mouseDown = false;
+    }
+
+    onKeyDown(event: EventKeyboard) {
+        if (!this.node.active) {
+            return;
+        }
+
+        switch (event.keyCode) {
+            //Change design mode
+            case KeyCode.KEY_Q:
+                this.onChooseGeckoDesignMode();
+                break;
+            case KeyCode.KEY_W:
+                this.onChooseHoleDesignMode();
+                break;
+            case KeyCode.KEY_E:
+                this.onChooseWallDesignMode();
+                break;
+            case KeyCode.KEY_A:
+                this.onChooseGeckoDeleteMode();
+                break;
+            case KeyCode.KEY_S:
+                this.onChooseHoleDeleteMode();
+                break;
+            case KeyCode.KEY_D:
+                this.onChooseDeleteWall();
+                break;
+            case KeyCode.KEY_Z:
+                this.onChooseSpecialTypeMode();
+                break;
+
+            //Change colors
+            case KeyCode.DIGIT_1:
+                this.changeColorByKey(0);
+                break;
+            case KeyCode.DIGIT_2:
+                this.changeColorByKey(1);
+                break;
+            case KeyCode.DIGIT_3:
+                this.changeColorByKey(2);
+                break;
+            case KeyCode.DIGIT_4:
+                this.changeColorByKey(3);
+                break;
+            case KeyCode.DIGIT_5:
+                this.changeColorByKey(4);
+                break;
+            case KeyCode.DIGIT_6:
+                this.changeColorByKey(5);
+                break;
+            case KeyCode.DIGIT_7:
+                this.changeColorByKey(6);
+                break;
+            case KeyCode.DIGIT_8:
+                this.changeColorByKey(7);
+                break;
+            case KeyCode.DIGIT_9:
+                this.changeColorByKey(8);
+                break;
+            case KeyCode.DIGIT_0:
+                this.changeColorByKey(9);
+                break;
+        }
+    }
+
+    private changeColorByKey(colorType: number) {
+        Global.ColorType = colorType;
+        this.onChangeColor();
     }
     
     onMouseMove(event: EventMouse) {

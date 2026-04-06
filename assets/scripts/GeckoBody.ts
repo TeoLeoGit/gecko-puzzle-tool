@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, log, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
+import { _decorator, Button, Component, Label, log, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
 import { Event } from './Constant';
 import EventManager from './EventManager';
 import { ColorType } from './Type';
@@ -77,11 +77,25 @@ export class GeckoBody extends Component {
         setSprite("Gecko_head", this.sprGeckoBody);
         this.sprGeckoBody.color = getColor(color);
         this.nodeArrow.active = false;
+
+        let labelNode = this.node.getChildByName('Label_gecko_id');
+        if (!labelNode) {
+            labelNode = new Node('Label_gecko_id');
+            this.node.addChild(labelNode);
+            labelNode.setPosition(0, 25, 0);
+        }
+        labelNode.setPosition(0, 25, 0);
+
+        let label = labelNode.getComponent(Label);
+        if (!label) {
+            label = labelNode.addComponent(Label);
+        }
+        label.string = String(this._geckoId);
+        label.isBold = true;
     }
 
     onClickAddSpecialGecko() {
         EventManager.instance.emit(Event.ON_CHANGE_GECKO_TO_SPECIAL, this._geckoId);
-        log('ok')
     }
 }
 
