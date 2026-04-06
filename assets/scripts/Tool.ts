@@ -41,6 +41,9 @@ export class Tool extends Component {
     btnDeleteGecko: Node = null;
 
     @property(Node)
+    btnDeleteHole: Node = null;
+
+    @property(Node)
     btnDesginWall: Node = null!;
 
     @property(Node)
@@ -171,6 +174,11 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.DeleteGecko) {
             const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
             this.deleteGeckoBody(snappedPos);
+        }
+
+        if (Global.DesignMode === DesignMode.DeleteHole) {
+            const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this.deleteHole(snappedPos);
         }
 
         if (Global.DesignMode === DesignMode.CreateWall) {
@@ -733,6 +741,38 @@ export class Tool extends Component {
         }
     }
 
+    deleteHole(position: Vec3) {
+        const targetCellNode = this.findCellAt(position);
+        if (!targetCellNode) return;
+
+        const targetCell = targetCellNode.getComponent(Cell);
+        if (!targetCell || targetCell.IsEmpty) return;
+
+        const targetHole = this.holeParent.children.find((holeNode) => {
+            const holeComp = holeNode.getComponent(Hole);
+            if (!holeComp) return false;
+
+            const rootPos = holeComp.RootPos;
+            return rootPos.x === targetCell.X && rootPos.y === targetCell.Y;
+        });
+        if (!targetHole) return;
+
+        const holeComp = targetHole.getComponent(Hole);
+        const rootPos = holeComp.RootPos;
+
+        EventManager.instance.emit(Event.DELETE_ONE_BODY, {
+            x: rootPos.x,
+            y: rootPos.y,
+            icon: '',
+            rootObj: targetHole,
+        });
+        targetHole.destroy();
+
+        this._editLevelData.holes = this._editLevelData.holes.filter((hole) => {
+            return !(hole.c === rootPos.x && hole.r === rootPos.y);
+        });
+    }
+
     deleteWall(event: EventMouse) {
         const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
         const targetCell = this.findCellAt(worldPos);
@@ -803,6 +843,17 @@ export class Tool extends Component {
         Global.DesignMode = DesignMode.CreateHole;
     }
 
+    onChooseHoleDeleteMode() {
+        if (Global.DesignMode === DesignMode.DeleteHole) {
+            this.clearDesignMode();
+            return;
+        }
+        
+        this.clearDesignMode();
+        this.btnDeleteHole.getChildByName("Sprite_check").active = true;
+        Global.DesignMode = DesignMode.DeleteHole;
+    }
+
     onChooseWallDesignMode() {
         if (Global.DesignMode === DesignMode.CreateWall) {
             this.clearDesignMode();
@@ -861,6 +912,7 @@ export class Tool extends Component {
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
         this.btnDesginSpecialType.getChildByName("Sprite_check").active = false;
         this.btnDeleteGecko.getChildByName("Sprite_check").active = false;
+        this.btnDeleteHole.getChildByName("Sprite_check").active = false;
 
         Global.DesignMode = DesignMode.None;
 
@@ -951,10 +1003,10 @@ export class Tool extends Component {
         this._idHoleIncrement++;
     }
 
-    hasDesignErrorInLevel(): boolean {
+    hasDesignErrorInLevel(): number {
         //Check time
         if (this._editLevelData.time === 0) {
-            return true;
+            return 1;
         }
 
         //Check gecko - hole
@@ -995,17 +1047,17 @@ export class Tool extends Component {
         }
 
         if (requiredTotal !== availableTotal) {
-            return true;
+            return 2;
         }
 
         for (const [color, requiredCount] of requiredHoleByColor.entries()) {
             const availableCount = availableHoleByColor.get(color) ?? 0;
             if (availableCount < requiredCount) {
-                return true;
+                return 2;
             }
         }
 
-        return false;
+        return 0;
     }
 
     saveData() {
@@ -1037,7 +1089,11 @@ export class Tool extends Component {
     }
 
     onSaveLevel() {
-        if (this.hasDesignErrorInLevel()) {
+        if (this.hasDesignErrorInLevel() === 1) {
+            EventManager.instance.emit(Event.SHOW_DESIGN_ERROR_POPUP, "Thời gian chơi không đúng!");
+            return;
+        }
+        if (this.hasDesignErrorInLevel() === 2) {
             EventManager.instance.emit(Event.SHOW_DESIGN_ERROR_POPUP, "Số gecko và lỗ chưa phù hợp, kiểm tra cả stack gecko!");
             return;
         }
