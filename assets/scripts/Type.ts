@@ -44,8 +44,8 @@ export enum ColorType {
   Pink = 7,
   Brown = 8,
   Black = 9,
-  DarkRed = 10,
   
+  DarkRed = 10,
   DarkGreen = 11,
   MossGreen = 12,
   LightRed = 13,

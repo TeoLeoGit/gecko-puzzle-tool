@@ -952,6 +952,12 @@ export class Tool extends Component {
     }
 
     hasDesignErrorInLevel(): boolean {
+        //Check time
+        if (this._editLevelData.time === 0) {
+            return true;
+        }
+
+        //Check gecko - hole
         const requiredHoleByColor: Map<number, number> = new Map();
         const availableHoleByColor: Map<number, number> = new Map();
 
