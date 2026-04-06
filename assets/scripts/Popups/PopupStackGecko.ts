@@ -33,7 +33,6 @@ export class PopupStackGecko extends Component {
         this.resetSelectionState();
         this._inputData = input;
         this.node.active = true;
-        log(input)
 
         const geckoColor = input?.geckoData?.color;
         if (geckoColor == null) {
@@ -59,6 +58,10 @@ export class PopupStackGecko extends Component {
     onClickClose() {
         if (this._inputData?.geckoData) {
             this._inputData.geckoData.type = GeckoType.Stacked;
+            if (!this._inputData.geckoData.properties) {
+                this._inputData.geckoData.properties = {};
+            }
+            this._inputData.geckoData.properties.specialGecko = this._inputData.data;
             this._inputData.data.stackColors = [...this._chosenColors.slice(1, 3)];
             SpecialGeckoHandler.addSpecialGecko(this._inputData);
         }

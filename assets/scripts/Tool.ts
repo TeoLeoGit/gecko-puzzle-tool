@@ -9,6 +9,7 @@ import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 import { Data } from "./Data";
 import { getColor } from "./Utils";
+import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -37,7 +38,7 @@ export class Tool extends Component {
     btnDesginHole: Node = null!;
 
     @property(Node)
-    btnFinishGecko: Node = null;
+    btnDeleteGecko: Node = null;
 
     @property(Node)
     btnDesginWall: Node = null!;
@@ -166,6 +167,10 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.CreateGecko) {
             const snappedPos = this.getClosestGridPosition(this._draggedGeckoBody.worldPosition);
             if (snappedPos) this.createGeckoBodyAt(snappedPos);
+        }
+        if (Global.DesignMode === DesignMode.DeleteGecko) {
+            const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this.deleteGeckoBody(snappedPos);
         }
 
         if (Global.DesignMode === DesignMode.CreateWall) {
@@ -340,9 +345,29 @@ export class Tool extends Component {
                 this.addGeckoPartToMap(gecko.id, bodyComponent);
                 prevBody = bodyComponent;
             }
+
+            if (gecko.type !== GeckoType.Normal) {
+                this.loadSpecialGecko(gecko);
+            }
         }
 
         this._idGeckoIncrement = maxGeckoId + 1;
+    }
+
+    loadSpecialGecko(geckoData: GeckoData) {
+        const geckoParts = this._mapGeckoIdAndParts.get(geckoData.id) ?? [];
+        if (geckoParts.length === 0) {
+            return;
+        }
+
+        const input: InputSpecialGeckoPopup = {
+            geckoData,
+            geckoParts,
+            specialType: geckoData.type,
+            data: geckoData.properties?.specialGecko ?? {},
+        };
+
+        SpecialGeckoHandler.addSpecialGecko(input);
     }
 
     loadHoles(holeData: HoleData[]) {
@@ -625,6 +650,87 @@ export class Tool extends Component {
         }
     }
 
+    deleteGeckoBody(position: Vec3) {
+        const targetCellNode = this.findCellAt(position);
+        if (!targetCellNode) return;
+
+        const targetCell = targetCellNode.getComponent(Cell);
+        if (!targetCell) return;
+
+        let targetGeckoId: number | null = null;
+        let targetBodyIndex = -1;
+
+        for (const [geckoId, geckoParts] of this._mapGeckoIdAndParts.entries()) {
+            const foundIndex = geckoParts.findIndex((bodyPart) => {
+                const rootPos = bodyPart.RootPos;
+                return rootPos.x === targetCell.X && rootPos.y === targetCell.Y;
+            });
+
+            if (foundIndex !== -1) {
+                targetGeckoId = geckoId;
+                targetBodyIndex = foundIndex;
+                break;
+            }
+        }
+
+        if (targetGeckoId == null || targetBodyIndex === -1) {
+            return;
+        }
+
+        const geckoParts = this._mapGeckoIdAndParts.get(targetGeckoId) ?? [];
+        if (targetBodyIndex !== geckoParts.length - 1) {
+            return;
+        }
+
+        const targetBody = geckoParts[targetBodyIndex];
+        if (!targetBody) return;
+
+        EventManager.instance.emit(Event.DELETE_ONE_BODY, {
+            x: targetBody.RootPos.x,
+            y: targetBody.RootPos.y,
+            icon: '',
+            rootObj: targetBody.node,
+        });
+        targetBody.node.destroy();
+
+        geckoParts.splice(targetBodyIndex, 1);
+
+        const geckoData = this._editLevelData.geckos.find((gecko) => gecko.id === targetGeckoId);
+        if (geckoData?.parts) {
+            geckoData.parts = geckoData.parts.filter((part) => !(part.c === targetCell.X && part.r === targetCell.Y));
+        }
+
+        if (geckoParts.length === 0 || !geckoData?.parts?.length) {
+            this._mapGeckoIdAndParts.delete(targetGeckoId);
+            this._editLevelData.geckos = this._editLevelData.geckos.filter((gecko) => gecko.id !== targetGeckoId);
+        } else {
+            this._mapGeckoIdAndParts.set(targetGeckoId, geckoParts);
+
+            const geckoColor = geckoData.color;
+            geckoParts[0].setHead(geckoColor);
+            if (geckoParts.length > 1) {
+                geckoParts[0].setHeadLookDirection(geckoParts[1].RootPos);
+            }
+
+            for (let i = 1; i < geckoParts.length; i++) {
+                geckoParts[i].nodeArrow.active = true;
+                geckoParts[i].setDirection(geckoParts[i - 1].RootPos);
+            }
+        }
+
+        if (this._currentGeckoData?.id === targetGeckoId) {
+            if (!this._currentGeckoData.parts?.length) {
+                this._currentGeckoData = null;
+                this._sectionBodies = [];
+            } else {
+                this._currentGeckoData.parts = this._currentGeckoData.parts.filter(
+                    (part) => !(part.c === targetCell.X && part.r === targetCell.Y),
+                );
+                this._sectionBodies = this._sectionBodies.filter((bodyPart) => bodyPart !== targetBody);
+            }
+        }
+    }
+
     deleteWall(event: EventMouse) {
         const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
         const targetCell = this.findCellAt(worldPos);
@@ -669,6 +775,17 @@ export class Tool extends Component {
         this._draggedGeckoBody.active = true;
         this.btnDesginGecko.getChildByName("Sprite_check").active = true;
         Global.DesignMode = DesignMode.CreateGecko;
+    }
+
+    onChooseGeckoDeleteMode() {
+        if (Global.DesignMode === DesignMode.DeleteGecko) {
+            this.clearDesignMode();
+            return;
+        }
+        
+        this.clearDesignMode();
+        this.btnDeleteGecko.getChildByName("Sprite_check").active = true;
+        Global.DesignMode = DesignMode.DeleteGecko;
     }
 
     onChooseHoleDesignMode() {
@@ -717,11 +834,18 @@ export class Tool extends Component {
             return;
         }
 
+        if (!geckoData.properties) {
+            geckoData.properties = {};
+        }
+        if (!geckoData.properties.specialGecko) {
+            geckoData.properties.specialGecko = {};
+        }
+
         const input: InputSpecialGeckoPopup = {
             geckoData,
             geckoParts: this._mapGeckoIdAndParts.get(geckoId),
             specialType: geckoData.type,
-            data: geckoData.properties?.specialGecko ?? {},
+            data: geckoData.properties.specialGecko,
         };
 
         EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
@@ -734,6 +858,7 @@ export class Tool extends Component {
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
         this.btnDesginSpecialType.getChildByName("Sprite_check").active = false;
+        this.btnDeleteGecko.getChildByName("Sprite_check").active = false;
 
         Global.DesignMode = DesignMode.None;
 
