@@ -44,7 +44,18 @@ export enum ColorType {
   Pink = 7,
   Brown = 8,
   Black = 9,
+  DarkRed = 10,
+  
+  DarkGreen = 11,
+  MossGreen = 12,
+  LightRed = 13,
+  MudBrown = 14,
+  LightPink = 15,
+  LightBrown = 16,
+
   Hidden = 20,
+  Masked = 21,
+  Sick = 22,
 }
 
 export enum CoverType {

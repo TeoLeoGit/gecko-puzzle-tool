@@ -646,7 +646,9 @@ export class Tool extends Component {
         // Find the grid cell or wall under this position
         const targetCell = this.findCellAt(worldPos);
         if (targetCell) {
-            targetCell.getComponent(Cell)?.setWall();
+            const cell = targetCell.getComponent(Cell);
+            if (!cell || !cell.IsEmpty) return;
+            cell.setWall();
         }
     }
 
@@ -949,6 +951,57 @@ export class Tool extends Component {
         this._idHoleIncrement++;
     }
 
+    hasDesignErrorInLevel(): boolean {
+        const requiredHoleByColor: Map<number, number> = new Map();
+        const availableHoleByColor: Map<number, number> = new Map();
+
+        for (const gecko of this._editLevelData.geckos) {
+            requiredHoleByColor.set(
+                gecko.color,
+                (requiredHoleByColor.get(gecko.color) ?? 0) + 1,
+            );
+
+            if (gecko.type === GeckoType.Stacked) {
+                const stackColors = gecko.properties?.specialGecko?.stackColors ?? [];
+                for (const stackColor of stackColors) {
+                    requiredHoleByColor.set(
+                        stackColor,
+                        (requiredHoleByColor.get(stackColor) ?? 0) + 1,
+                    );
+                }
+            }
+        }
+
+        for (const hole of this._editLevelData.holes) {
+            availableHoleByColor.set(
+                hole.color,
+                (availableHoleByColor.get(hole.color) ?? 0) + 1,
+            );
+        }
+
+        let requiredTotal = 0;
+        let availableTotal = 0;
+        for (const count of requiredHoleByColor.values()) {
+            requiredTotal += count;
+        }
+        for (const count of availableHoleByColor.values()) {
+            availableTotal += count;
+        }
+
+        if (requiredTotal !== availableTotal) {
+            return true;
+        }
+
+        for (const [color, requiredCount] of requiredHoleByColor.entries()) {
+            const availableCount = availableHoleByColor.get(color) ?? 0;
+            if (availableCount < requiredCount) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     saveData() {
         const timeParsed = Number(this.editBoxTime.string);
         if (!isNaN(timeParsed)) {
@@ -978,6 +1031,11 @@ export class Tool extends Component {
     }
 
     onSaveLevel() {
+        if (this.hasDesignErrorInLevel()) {
+            EventManager.instance.emit(Event.SHOW_DESIGN_ERROR_POPUP, "Số gecko và lỗ chưa phù hợp, kiểm tra cả stack gecko!");
+            return;
+        }
+
         this.saveData();
         this.onReturnWithoutSave();
     }
