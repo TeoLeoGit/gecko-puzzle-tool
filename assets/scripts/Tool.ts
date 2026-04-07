@@ -536,6 +536,7 @@ export class Tool extends Component {
             if (parsed > 2 && parsed <= Config.MAX_COLUMN) {
                 Global.ColCount = parsed;
                 this._editLevelData.width = parsed;
+                this.clearPlacedObjectsData();
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
             }
         }
@@ -551,6 +552,7 @@ export class Tool extends Component {
             if (parsed > 2 && parsed <= Config.MAX_ROW) {
                 Global.RowCount = parsed;
                 this._editLevelData.height = parsed;
+                this.clearPlacedObjectsData();
                 this.onGridDimChanged(Global.ColCount, Global.RowCount);
             }
         }
@@ -637,6 +639,16 @@ export class Tool extends Component {
             child.destroy();
         }
         this.holeParent.removeAllChildren();
+    }
+
+    private clearPlacedObjectsData() {
+        this._editLevelData.geckos = [];
+        this._editLevelData.holes = [];
+        this._sectionBodies = [];
+        this._currentGeckoData = null;
+        this._idGeckoIncrement = 0;
+        this._idHoleIncrement = 0;
+        this._mapGeckoIdAndParts.clear();
     }
 
     //Design Mode

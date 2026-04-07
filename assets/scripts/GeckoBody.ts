@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, Label, log, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
+import { _decorator, Button, Component, Label, LabelOutline, log, Node, Sprite, SpriteFrame, Vec2 } from 'cc';
 import { Event } from './Constant';
 import EventManager from './EventManager';
 import { ColorType } from './Type';
@@ -92,6 +92,12 @@ export class GeckoBody extends Component {
         }
         label.string = String(this._geckoId);
         label.isBold = true;
+
+        let outline = labelNode.getComponent(LabelOutline);
+        if (!outline) {
+            outline = labelNode.addComponent(LabelOutline);
+        }
+        outline.width = 2;
     }
 
     onClickAddSpecialGecko() {
