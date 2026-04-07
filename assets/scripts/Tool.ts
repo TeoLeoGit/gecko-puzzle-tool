@@ -1,6 +1,6 @@
 import { _decorator, Camera, Component, EventKeyboard, EventMouse, Input, input, KeyCode, Prefab, Vec3, Node, log, instantiate, Sprite, UITransform, EditBox, Layout, Toggle, Label } from "cc";
 import { Cell } from "./Cell";
-import { Config, GeckoData, GeckoPart, HoleData, InputSpecialGeckoPopup, LevelData } from "./Config";
+import { Config, GeckoData, GeckoPart, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, LevelData } from "./Config";
 import { Global } from "./Global";
 import { Event } from './Constant';
 import EventManager from "./EventManager";
@@ -117,6 +117,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
         EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
         EventManager.instance.on(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
+        EventManager.instance.on(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole, this);
 
         this.initGrid();
         this.init();
@@ -138,6 +139,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
         EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
         EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
+        EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole);
     }
 
     onMouseDown(event: EventMouse) {
@@ -290,6 +292,7 @@ export class Tool extends Component {
             this.previewLayer.addChild(hole);
             const holePos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
             hole.setPosition(holePos);
+            hole.getComponent(Hole).removeBtn();
             this._draggedHole = hole;
         }
     }
@@ -456,7 +459,7 @@ export class Tool extends Component {
 
         SpecialGeckoHandler.addSpecialGecko(input);
         GeckoItemHandler.addGeckoItem(input);
-        CoverHandler.addCover(input);
+        CoverHandler.addCoverForGecko(input);
     }
 
     loadHoles(holeData: HoleData[]) {
@@ -485,11 +488,31 @@ export class Tool extends Component {
             cell.setContainForGeckoBody(holeNode);
 
             const holeComponent = holeNode.getComponent(Hole);
+            holeComponent.setHoleId(hole.id);
             holeComponent.setRoot(col, row);
             holeComponent.setColor(hole.color);
+
+            if (hole.type !== HoleType.normal || hole.covers) {
+                this.loadSpecialHole(hole, holeComponent);
+            }
         }
 
         this._idHoleIncrement = maxHoleId + 1;
+    }
+
+    loadSpecialHole(holeData: HoleData, holeComp: Hole) {
+        if (!holeData || !holeComp) {
+            return;
+        }
+
+        const input: InputSpecialHolePopup = {
+            holeData,
+            holeComp,
+            specialType: holeData.type,
+            dataCover: holeData.covers,
+        };
+
+        CoverHandler.addCoverHole(input);
     }
 
     loadWallCells(cells: string[]) {
@@ -972,6 +995,10 @@ export class Tool extends Component {
             }
         }
 
+        for (const holeNode of this.holeParent.children) {
+            holeNode.getComponent(Hole)?.enableBtn();
+        }
+
     }
 
     onShowPopupSpecialGecko(geckoId: number) {
@@ -998,6 +1025,33 @@ export class Tool extends Component {
         EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
     }
 
+    onShowPopupSpecialHole(holeId: number) {
+        const holeData = this._editLevelData.holes.find((hole) => hole.id === holeId);
+        if (!holeData) {
+            return;
+        }
+
+        if (!holeData.properties) {
+            holeData.properties = {};
+        }
+
+        const holeComp = this.holeParent.children
+            .map((holeNode) => holeNode.getComponent(Hole))
+            .find((hole) => hole && hole.RootPos.x === holeData.c && hole.RootPos.y === holeData.r);
+        if (!holeComp) {
+            return;
+        }
+
+        const input: InputSpecialHolePopup = {
+            holeData,
+            holeComp,
+            specialType: holeData.type,
+            dataCover: holeData.covers,
+        };
+
+        EventManager.instance.emit(Event.SHOW_SPECIAL_HOLE_POPUP, input);
+    }
+
     clearDesignMode() {
         this._draggedGeckoBody.active = false;
         this._draggedHole.active = false;
@@ -1014,6 +1068,10 @@ export class Tool extends Component {
             for (const bodyPart of geckoParts) {
                 bodyPart.disableBtn();
             }
+        }
+
+        for (const holeNode of this.holeParent.children) {
+            holeNode.getComponent(Hole)?.disableBtn();
         }
 
         //set gecko
@@ -1093,6 +1151,7 @@ export class Tool extends Component {
             properties: {},
         };
 
+        hole.setHoleId(this._idHoleIncrement);
         this._editLevelData.holes.push(data);
         this._idHoleIncrement++;
     }

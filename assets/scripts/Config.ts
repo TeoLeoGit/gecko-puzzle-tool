@@ -2,6 +2,7 @@
 import { Node } from "cc";
 import { CarryItemType, ColorType, CoverType, GeckoType, HoleType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
+import { Hole } from "./Hole";
 
 export class Config {
   public static MAX_ROW = 16;
@@ -64,6 +65,11 @@ export type HoleProperties = {
 
 }
 
+export type CoverProperties = {
+  //ice cover
+  count?: number;
+}
+
 export type LevelData = {
   level: number;
   time: number;
@@ -93,7 +99,9 @@ export type InputSpecialGeckoPopup = {
   dataCover?: CoverData;
 }
 
-export type CoverProperties = {
-  //ice cover
-  count?: number;
+export type InputSpecialHolePopup = {
+  holeData: HoleData;
+  holeComp: Hole;
+  specialType: HoleType;
+  dataCover?: CoverData;
 }

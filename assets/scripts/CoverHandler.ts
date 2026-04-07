@@ -1,10 +1,10 @@
 import { Node, Sprite, UIOpacity, UITransform, Vec3 } from 'cc';
-import { InputSpecialGeckoPopup } from './Config';
+import { InputSpecialGeckoPopup, InputSpecialHolePopup } from './Config';
 import { CoverType } from './Type';
 import { setSprite } from './Utils';
 
 export class CoverHandler {
-    public static addCover(input: InputSpecialGeckoPopup) {
+    public static addCoverForGecko(input: InputSpecialGeckoPopup) {
         const covers = input.geckoData.Cover ?? [];
         if (covers.length === 0 || !input.geckoParts?.length) {
             return;
@@ -36,6 +36,30 @@ export class CoverHandler {
                 }
                 continue;
             }
+        }
+    }
+
+    public static addCoverHole(input: InputSpecialHolePopup) {
+        const coverData = input.holeData.covers;
+        const rootNode = input.holeComp?.node;
+        if (!coverData || !rootNode) {
+            return;
+        }
+
+        for (const child of [...rootNode.children]) {
+            if (child.name.startsWith('Cover_')) {
+                child.destroy();
+            }
+        }
+
+        if (coverData.type === CoverType.Crate) {
+            this.addCoverNode(rootNode, 0, coverData.type);
+            return;
+        }
+
+        if (coverData.type === CoverType.Ice) {
+            this.addCoverNode(rootNode, 0, coverData.type);
+            return;
         }
     }
 
