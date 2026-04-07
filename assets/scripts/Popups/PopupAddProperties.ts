@@ -1,5 +1,5 @@
 import { _decorator, Component, EditBox, instantiate, Label, Node, Prefab } from 'cc';
-import { InputSpecialGeckoPopup } from '../Config';
+import { CarryItemData, InputSpecialGeckoPopup, SpecialGeckoData } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 const { ccclass, property } = _decorator;
@@ -29,10 +29,14 @@ export class PopupAddProperties extends Component {
 
         this.propertiesContainer.removeAllChildren();
 
-        const dataSpecialGecko = this._input?.dataSpecialGecko ?? {};
-        const propertyNames = Object.keys(dataSpecialGecko);
+        const targetData = this.getEditableData();
+        const propertyNames = Object.keys(targetData);
         for (const propertyName of propertyNames) {
-            const propertyValue = dataSpecialGecko[propertyName];
+            if (this._input?.dataCarryItem && propertyName === 'type') {
+                continue;
+            }
+
+            const propertyValue = targetData[propertyName];
             if (propertyValue === undefined) {
                 continue;
             }
@@ -67,9 +71,10 @@ export class PopupAddProperties extends Component {
     onValueChanged(editBox: EditBox) {
         const value = editBox.string;
         const propertyName = editBox.node.parent?.name;
-        if (!propertyName || !this._input?.dataSpecialGecko) return;
+        const targetData = this.getEditableData();
+        if (!propertyName || !targetData) return;
 
-        const currentValue = this._input.dataSpecialGecko[propertyName];
+        const currentValue = targetData[propertyName];
         if (Array.isArray(currentValue)) {
             const parsedValues = value
                 .split(',')
@@ -77,16 +82,29 @@ export class PopupAddProperties extends Component {
                 .filter((item) => item !== '')
                 .map((item) => Number(item));
 
-            this._input.dataSpecialGecko[propertyName] = parsedValues;
+            targetData[propertyName] = parsedValues;
             return;
         }
 
         const parsed = Number(value);
         if (!isNaN(parsed)) {
-            this._input.dataSpecialGecko[propertyName] = parsed;
+            targetData[propertyName] = parsed;
             return;
         }
 
-        this._input.dataSpecialGecko[propertyName] = value;
+        targetData[propertyName] = value;
+    }
+
+    private getEditableData(): SpecialGeckoData | CarryItemData {
+        if (this._input?.dataCarryItem) {
+            return this._input.dataCarryItem;
+        }
+
+        if (this._input?.dataSpecialGecko) {
+            return this._input.dataSpecialGecko;
+        }
+
+        this._input.dataSpecialGecko = {};
+        return this._input.dataSpecialGecko;
     }
 }

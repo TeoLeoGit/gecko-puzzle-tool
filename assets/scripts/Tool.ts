@@ -10,6 +10,7 @@ import { Hole } from "./Hole";
 import { Data } from "./Data";
 import { getColor } from "./Utils";
 import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
+import { GeckoItemHandler } from "./GeckoItemHandler";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -288,7 +289,6 @@ export class Tool extends Component {
             this.previewLayer.addChild(hole);
             const holePos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
             hole.setPosition(holePos);
-            //hole.getComponent(Hole).disableBtn();
             this._draggedHole = hole;
         }
     }
@@ -431,7 +431,7 @@ export class Tool extends Component {
                 prevBody = bodyComponent;
             }
 
-            if (gecko.type !== GeckoType.Normal) {
+            if (gecko.type !== GeckoType.Normal || gecko.properties?.carryItem) {
                 this.loadSpecialGecko(gecko);
             }
         }
@@ -450,9 +450,11 @@ export class Tool extends Component {
             geckoParts,
             specialType: geckoData.type,
             dataSpecialGecko: geckoData.properties?.specialGecko ?? {},
+            dataCarryItem: geckoData.properties?.carryItem,
         };
 
         SpecialGeckoHandler.addSpecialGecko(input);
+        GeckoItemHandler.addGeckoItem(input);
     }
 
     loadHoles(holeData: HoleData[]) {
@@ -988,6 +990,7 @@ export class Tool extends Component {
             geckoParts: this._mapGeckoIdAndParts.get(geckoId),
             specialType: geckoData.type,
             dataSpecialGecko: geckoData.properties.specialGecko,
+            dataCarryItem: geckoData.properties.carryItem,
         };
 
         EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);

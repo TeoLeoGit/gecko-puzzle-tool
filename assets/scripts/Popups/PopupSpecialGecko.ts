@@ -3,7 +3,8 @@ import { InputSpecialGeckoPopup } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 import { SpecialGeckoHandler } from '../SpecialGeckoHandler';
-import { GeckoType } from '../Type';
+import { GeckoItemHandler } from '../GeckoItemHandler';
+import { CarryItemType, GeckoType } from '../Type';
 const { ccclass, property } = _decorator;
 
 @ccclass('PopupSpecialGecko')
@@ -47,11 +48,51 @@ export class PopupSpecialGecko extends Component {
 
         if (geckoType === GeckoType.Hidden) {
             this._input.geckoData.type = GeckoType.Hidden;
+            this._input.dataSpecialGecko ??= {};
+            this._input.dataCarryItem = undefined;
             this._input.dataSpecialGecko.unlockNumber = 1;
+            if (!this._input.geckoData.properties) {
+                this._input.geckoData.properties = {};
+            }
+            this._input.geckoData.properties.specialGecko = this._input.dataSpecialGecko;
             SpecialGeckoHandler.addSpecialGecko(this._input);
             EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
             return;
         }
+    }
+
+    onChooseGeckoWithItem(_event: CocosEvent, customEventData?: string) {
+        const parsed = Number(customEventData);
+        if (isNaN(parsed)) {
+            return;
+        }
+
+        const carryItemType = parsed as CarryItemType;
+        this._input.dataSpecialGecko = undefined;
+        this._input.dataCarryItem = {
+            type: carryItemType,
+        };
+
+        switch (carryItemType) {
+            case CarryItemType.Lock:
+                this._input.dataCarryItem.keyConsumeAmount = 1;
+                break;
+                case CarryItemType.Key:
+                this._input.dataCarryItem.idUnlockGecko = 1;
+                break;
+            case CarryItemType.Scissors:
+                this._input.dataCarryItem.targetGroundId = 1;
+                break;
+            default:
+                return;
+        }
+
+        if (!this._input.geckoData.properties) {
+            this._input.geckoData.properties = {};
+        }
+        this._input.geckoData.properties.carryItem = this._input.dataCarryItem;
+        GeckoItemHandler.addGeckoItem(this._input);
+        EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
     }
 
     updateViewProperties() {
@@ -61,13 +102,22 @@ export class PopupSpecialGecko extends Component {
 
         this.dataPreview.removeAllChildren();
 
-        const dataSpecialGecko = this._input?.dataSpecialGecko ?? {};
-        const propertyNames = Object.keys(dataSpecialGecko);
-        for (const propertyName of propertyNames) {
+        const dataSpecialGecko = this._input?.geckoData?.properties?.specialGecko ?? {};
+        for (const propertyName of Object.keys(dataSpecialGecko)) {
             const previewNode = new Node(`Preview_${propertyName}`);
             const label = previewNode.addComponent(Label);
             label.string = JSON.stringify({
                 [propertyName]: dataSpecialGecko[propertyName],
+            });
+            this.dataPreview.addChild(previewNode);
+        }
+
+        const dataCarryItem = this._input?.geckoData?.properties?.carryItem ?? {};
+        for (const propertyName of Object.keys(dataCarryItem)) {
+            const previewNode = new Node(`Preview_${propertyName}`);
+            const label = previewNode.addComponent(Label);
+            label.string = JSON.stringify({
+                [propertyName]: dataCarryItem[propertyName],
             });
             this.dataPreview.addChild(previewNode);
         }

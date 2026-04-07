@@ -86,7 +86,7 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -111.139,
+      "x": -113.531,
       "y": 0,
       "z": 0
     },
@@ -127,7 +127,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 88.716796875,
+      "width": 250,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -166,11 +166,11 @@
     "_string": "Prop",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 42,
+    "_actualFontSize": 43,
     "_fontSize": 42,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
-    "_overflow": 0,
+    "_overflow": 2,
     "_enableWrapText": true,
     "_font": null,
     "_isSystemFontUsed": true,

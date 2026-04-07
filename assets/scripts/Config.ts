@@ -19,10 +19,10 @@ export interface CoverData {
 
 export type CarryItemData = {
   type: CarryItemType;
-  geckoId: number;
-  idUnlockGecko: number;
-  targetGroundId: number;
-  keyConsumeAmount: number;
+  geckoId?: number;
+  idUnlockGecko?: number;
+  targetGroundId?: number;
+  keyConsumeAmount?: number;
 }
 
 export type SpecialGeckoData = {
@@ -87,5 +87,6 @@ export type InputSpecialGeckoPopup = {
   geckoData: GeckoData;
   geckoParts: GeckoBody[];
   specialType: GeckoType;
-  dataSpecialGecko: SpecialGeckoData;
+  dataSpecialGecko?: SpecialGeckoData;
+  dataCarryItem?: CarryItemData;
 }
