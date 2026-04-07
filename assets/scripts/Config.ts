@@ -1,6 +1,6 @@
 
 import { Node } from "cc";
-import { CarryItemType, ColorType, GeckoType, HoleType } from "./Type";
+import { CarryItemType, ColorType, CoverType, GeckoType, HoleType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 
 export class Config {
@@ -14,7 +14,8 @@ export interface GeckoPart {
 }
 
 export interface CoverData {
-  [key: string]: unknown;
+  type: CoverType;
+  properties: CoverProperties;
 }
 
 export type CarryItemData = {
@@ -46,7 +47,7 @@ export type GeckoData = {
   properties?: GeckoProperties;
   parts?: GeckoPart[];
   Cover?: CoverData[];
-  layers?: CoverData[];
+  //layers?: CoverData[];
 }
 
 export type HoleData = {
@@ -89,4 +90,10 @@ export type InputSpecialGeckoPopup = {
   specialType: GeckoType;
   dataSpecialGecko?: SpecialGeckoData;
   dataCarryItem?: CarryItemData;
+  dataCover?: CoverData;
+}
+
+export type CoverProperties = {
+  //ice cover
+  count?: number;
 }

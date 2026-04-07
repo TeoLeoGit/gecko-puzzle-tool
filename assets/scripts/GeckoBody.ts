@@ -97,7 +97,7 @@ export class GeckoBody extends Component {
         if (!outline) {
             outline = labelNode.addComponent(LabelOutline);
         }
-        outline.width = 2;
+        label.outlineWidth = 2;
     }
 
     onClickAddSpecialGecko() {

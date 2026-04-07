@@ -1,8 +1,10 @@
 import { _decorator, Component, EditBox, instantiate, Label, Node, Prefab } from 'cc';
-import { CarryItemData, InputSpecialGeckoPopup, SpecialGeckoData } from '../Config';
+import { CarryItemData, CoverProperties, InputSpecialGeckoPopup, SpecialGeckoData } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 const { ccclass, property } = _decorator;
+
+type EditableData = SpecialGeckoData | CarryItemData | CoverProperties;
 
 @ccclass('PopupAddProperties')
 export class PopupAddProperties extends Component {
@@ -32,7 +34,7 @@ export class PopupAddProperties extends Component {
         const targetData = this.getEditableData();
         const propertyNames = Object.keys(targetData);
         for (const propertyName of propertyNames) {
-            if (this._input?.dataCarryItem && propertyName === 'type') {
+            if ((this._input?.dataCarryItem || this._input?.dataCover) && propertyName === 'type') {
                 continue;
             }
 
@@ -95,7 +97,12 @@ export class PopupAddProperties extends Component {
         targetData[propertyName] = value;
     }
 
-    private getEditableData(): SpecialGeckoData | CarryItemData {
+    private getEditableData(): EditableData {
+        if (this._input?.dataCover) {
+            this._input.dataCover.properties ??= {};
+            return this._input.dataCover.properties;
+        }
+
         if (this._input?.dataCarryItem) {
             return this._input.dataCarryItem;
         }

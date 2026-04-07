@@ -11,6 +11,7 @@ import { Data } from "./Data";
 import { getColor } from "./Utils";
 import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
 import { GeckoItemHandler } from "./GeckoItemHandler";
+import { CoverHandler } from "./CoverHandler";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -431,7 +432,7 @@ export class Tool extends Component {
                 prevBody = bodyComponent;
             }
 
-            if (gecko.type !== GeckoType.Normal || gecko.properties?.carryItem) {
+            if (gecko.type !== GeckoType.Normal || gecko.properties?.carryItem || gecko.Cover?.length) {
                 this.loadSpecialGecko(gecko);
             }
         }
@@ -455,6 +456,7 @@ export class Tool extends Component {
 
         SpecialGeckoHandler.addSpecialGecko(input);
         GeckoItemHandler.addGeckoItem(input);
+        CoverHandler.addCover(input);
     }
 
     loadHoles(holeData: HoleData[]) {

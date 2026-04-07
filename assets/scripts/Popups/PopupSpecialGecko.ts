@@ -1,10 +1,11 @@
 import { _decorator, Event as CocosEvent, Component, Label, Node } from 'cc';
-import { InputSpecialGeckoPopup } from '../Config';
+import { CoverData, InputSpecialGeckoPopup } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 import { SpecialGeckoHandler } from '../SpecialGeckoHandler';
 import { GeckoItemHandler } from '../GeckoItemHandler';
-import { CarryItemType, GeckoType } from '../Type';
+import { CoverHandler } from '../CoverHandler';
+import { CarryItemType, CoverType, GeckoType } from '../Type';
 const { ccclass, property } = _decorator;
 
 @ccclass('PopupSpecialGecko')
@@ -50,6 +51,7 @@ export class PopupSpecialGecko extends Component {
             this._input.geckoData.type = GeckoType.Hidden;
             this._input.dataSpecialGecko ??= {};
             this._input.dataCarryItem = undefined;
+            this._input.dataCover = undefined;
             this._input.dataSpecialGecko.unlockNumber = 1;
             if (!this._input.geckoData.properties) {
                 this._input.geckoData.properties = {};
@@ -69,6 +71,7 @@ export class PopupSpecialGecko extends Component {
 
         const carryItemType = parsed as CarryItemType;
         this._input.dataSpecialGecko = undefined;
+        this._input.dataCover = undefined;
         this._input.dataCarryItem = {
             type: carryItemType,
         };
@@ -95,6 +98,40 @@ export class PopupSpecialGecko extends Component {
         EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
     }
 
+    onChooseGeckoCover(_event: CocosEvent, customEventData?: string) {
+        const parsed = Number(customEventData);
+        if (isNaN(parsed)) {
+            return;
+        }
+
+        const coverType = parsed as CoverType;
+        if (coverType !== CoverType.Crate && coverType !== CoverType.Ice) {
+            return;
+        }
+
+        if (!this._input.geckoData.Cover) {
+            this._input.geckoData.Cover = [];
+        }
+
+        let coverData = this._input.geckoData.Cover.find((cover) => cover.type === coverType);
+        if (!coverData) {
+            coverData = {
+                type: coverType,
+                properties: {},
+            };
+
+            if (coverType === CoverType.Ice) {
+                coverData.properties.count = 1;
+            }
+
+            this._input.geckoData.Cover.push(coverData);
+        }
+
+        this._input.dataCover = coverData;
+        CoverHandler.addCover(this._input);
+        EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
+    }
+
     updateViewProperties() {
         if (!this.dataPreview) {
             return;
@@ -118,6 +155,22 @@ export class PopupSpecialGecko extends Component {
             const label = previewNode.addComponent(Label);
             label.string = JSON.stringify({
                 [propertyName]: dataCarryItem[propertyName],
+            });
+            this.dataPreview.addChild(previewNode);
+        }
+
+        const coverDataList = this._input?.geckoData?.Cover ?? [];
+        for (let coverIndex = 0; coverIndex < coverDataList.length; coverIndex++) {
+            const coverData = coverDataList[coverIndex];
+            if (!coverData || coverData.type == null) {
+                continue;
+            }
+
+            const previewNode = new Node(`Preview_Cover_${coverIndex}`);
+            const label = previewNode.addComponent(Label);
+            label.string = JSON.stringify({
+                type: coverData.type,
+                properties: coverData.properties ?? {},
             });
             this.dataPreview.addChild(previewNode);
         }
