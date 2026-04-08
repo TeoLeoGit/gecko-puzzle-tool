@@ -1,6 +1,6 @@
 
 import { Node } from "cc";
-import { CarryItemType, ColorType, CoverType, GeckoType, HoleType } from "./Type";
+import { CarryItemType, ColorType, CoverType, GeckoType, GroundType, HoleType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 
@@ -70,6 +70,18 @@ export type CoverProperties = {
   count?: number;
 }
 
+export type GroundData = {
+  id: number;
+  r: number;
+  c: number;
+  type: GroundType;
+  properties?: GroundProperties;
+}
+
+export type GroundProperties = {
+  count?: number;
+}
+
 export type LevelData = {
   level: number;
   time: number;
@@ -77,7 +89,7 @@ export type LevelData = {
   width: number;
   height: number;
   cells: string[];
-  grounds: [];
+  grounds: GroundData[];
   holes: HoleData[];
   geckos: GeckoData[];
   Cover: [];

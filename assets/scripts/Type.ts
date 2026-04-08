@@ -77,5 +77,7 @@ export enum DesignMode {
   DeleteWall = 3,
   CreateHole = 4,
   DeleteHole = 5,
-  None = 6,
+  CreateGround = 6,
+  DeleteGround = 7,
+  None = 100,
 }

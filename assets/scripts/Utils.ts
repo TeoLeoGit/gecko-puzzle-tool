@@ -59,6 +59,32 @@ export const getColor = (color: ColorType): Color => {
     }
 }
 
+export const getColorName = (color: number): string => {
+    switch (color) {
+        case 0: return 'Red';
+        case 1: return 'Green';
+        case 2: return 'Yellow';
+        case 3: return 'Blue';
+        case 4: return 'Cyan';
+        case 5: return 'Purple';
+        case 6: return 'Orange';
+        case 7: return 'Pink';
+        case 8: return 'Brown';
+        case 9: return 'Black';
+        case 10: return 'DarkRed';
+        case 11: return 'DarkGreen';
+        case 12: return 'MossGreen';
+        case 13: return 'LightRed';
+        case 14: return 'MudBrown';
+        case 15: return 'LightPink';
+        case 16: return 'LightBrown';
+        case 20: return 'Hidden';
+        case 21: return 'Masked';
+        case 22: return 'Sick';
+        default: return `Color ${color}`;
+    }
+}
+
 export const setSprite = (spriteName: string, applySprite: Sprite) => {
     resources.loadDir<SpriteFrame>('images/level/' + spriteName, SpriteFrame, (err, assets) => {
         if (err) {

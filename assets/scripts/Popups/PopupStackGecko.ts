@@ -39,20 +39,14 @@ export class PopupStackGecko extends Component {
             return;
         }
 
-        this._lockedColor = geckoColor;
-        this._chosenColors.push(geckoColor);
-        this.addChosenColorPreview(geckoColor);
+        this.lockChosenColor(geckoColor, true);
 
-        const lockedButton = this.getButtonByColor(geckoColor);
-        if (!lockedButton) {
-            return;
+        if (input.specialType === GeckoType.Stacked) {
+            const stackColors = input.dataSpecialGecko?.stackColors ?? [];
+            for (const stackColor of stackColors) {
+                this.lockChosenColor(stackColor);
+            }
         }
-
-        const checkNode = lockedButton.node.getChildByName('Sprite_check');
-        if (checkNode) {
-            checkNode.active = true;
-        }
-        lockedButton.interactable = false;
     }
 
     onClickClose() {
@@ -149,6 +143,30 @@ export class PopupStackGecko extends Component {
         sprite.color = getColor(colorType);
 
         this.chosenColorContainer.addChild(colorNode);
+    }
+
+    private lockChosenColor(colorType: ColorType, isBaseColor: boolean = false) {
+        if (this._chosenColors.indexOf(colorType) !== -1) {
+            return;
+        }
+
+        if (isBaseColor) {
+            this._lockedColor = colorType;
+        }
+
+        this._chosenColors.push(colorType);
+        this.addChosenColorPreview(colorType);
+
+        const button = this.getButtonByColor(colorType);
+        if (!button) {
+            return;
+        }
+
+        const checkNode = button.node.getChildByName('Sprite_check');
+        if (checkNode) {
+            checkNode.active = true;
+        }
+        button.interactable = false;
     }
 
     private getButtonByColor(colorType: ColorType): Button | null {
