@@ -1,4 +1,7 @@
 import { _decorator, Button, Component, Sprite, Vec2 } from 'cc';
+import { GroundData, InputGroundPopup } from './Config';
+import { Event } from './Constant';
+import EventManager from './EventManager';
 import { GroundType } from './Type';
 import { setSprite } from './Utils';
 const { ccclass, property } = _decorator;
@@ -21,6 +24,10 @@ export class GroundObject extends Component {
         return this._groundType;
     }
 
+    public static hasEditableProperties(type: GroundType): boolean {
+        return type === GroundType.Stone_Wall;
+    }
+
     setGroundId(id: number) {
         this._groundId = id;
     }
@@ -28,6 +35,35 @@ export class GroundObject extends Component {
     setRoot(x: number, y: number) {
         this._x = x;
         this._y = y;
+    }
+
+    setupGround(id: number, x: number, y: number, type: GroundType) {
+        this.setGroundId(id);
+        this.setRoot(x, y);
+        this.setType(type);
+    }
+
+    createGroundData(): GroundData {
+        return {
+            id: this._groundId,
+            type: this._groundType,
+            r: this._y,
+            c: this._x,
+            properties: this._groundType === GroundType.Stone_Wall
+                ? { count: 1 }
+                : {},
+        };
+    }
+
+    showPropertiesPopup(groundData: GroundData) {
+        if (!GroundObject.hasEditableProperties(this._groundType)) {
+            return;
+        }
+
+        const input: InputGroundPopup = {
+            groundData,
+        };
+        EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, input);
     }
 
     setType(type: GroundType) {
@@ -72,4 +108,3 @@ export class GroundObject extends Component {
         }
     }
 }
-

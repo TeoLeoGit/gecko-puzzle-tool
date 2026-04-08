@@ -1,15 +1,16 @@
 import { _decorator, Component, EditBox, instantiate, Label, Node, Prefab } from 'cc';
-import { CarryItemData, CoverData, CoverProperties, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, SpecialGeckoData } from '../Config';
+import { CarryItemData, CoverData, CoverProperties, GroundData, GroundProperties, HoleData, InputGroundPopup, InputSpecialGeckoPopup, InputSpecialHolePopup, SpecialGeckoData } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 const { ccclass, property } = _decorator;
 
-type EditableData = SpecialGeckoData | CarryItemData | CoverProperties;
+type EditableData = SpecialGeckoData | CarryItemData | CoverProperties | GroundProperties;
 type PopupPropertiesInput = {
     dataCover?: CoverData;
     dataCarryItem?: CarryItemData;
     dataSpecialGecko?: SpecialGeckoData;
     holeData?: HoleData;
+    groundData?: GroundData;
 };
 
 @ccclass('PopupAddProperties')
@@ -31,7 +32,7 @@ export class PopupAddProperties extends Component {
         EventManager.instance.off(Event.SHOW_ADD_PROPERTIES_POPUP, this.onShow);
     }
 
-    onShow(input: InputSpecialGeckoPopup | InputSpecialHolePopup) {
+    onShow(input: InputSpecialGeckoPopup | InputSpecialHolePopup | InputGroundPopup) {
         this.node.active = true;
         this._input = input;
 
@@ -116,6 +117,11 @@ export class PopupAddProperties extends Component {
         if (this._input?.holeData) {
             this._input.holeData.properties ??= {};
             return this._input.holeData.properties;
+        }
+
+        if (this._input?.groundData) {
+            this._input.groundData.properties ??= {};
+            return this._input.groundData.properties;
         }
 
         if (this._input?.dataSpecialGecko) {

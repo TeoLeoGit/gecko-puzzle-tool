@@ -863,11 +863,11 @@ export class Tool extends Component {
             this.groundParent.addChild(newGround);
             newGround.setWorldPosition(position);
             const groundComponent = newGround.getComponent(GroundObject);
-            groundComponent.setGroundId(this._idGroundIncrement);
-            groundComponent.setRoot(rootCell.X, rootCell.Y);
-            groundComponent.setType(Global.GroundType);
+            groundComponent.setupGround(this._idGroundIncrement, rootCell.X, rootCell.Y, Global.GroundType);
 
-            this.addGroundData(groundComponent);
+            const groundData = groundComponent.createGroundData();
+            this.addGroundData(groundData);
+            groundComponent.showPropertiesPopup(groundData);
         } else {
             newGround.destroy();
         }
@@ -1038,18 +1038,8 @@ export class Tool extends Component {
         }
     }
 
-    addGroundData(ground: GroundObject) {
-        const pos = ground.RootPos;
-        const data: GroundData = {
-            id: this._idGroundIncrement,
-            type: ground.GroundType,
-            r: pos.y,
-            c: pos.x,
-            properties: {},
-        };
-
-        ground.setGroundId(this._idGroundIncrement);
-        this._editLevelData.grounds.push(data);
+    addGroundData(groundData: GroundData) {
+        this._editLevelData.grounds.push(groundData);
         this._idGroundIncrement++;
     }
 

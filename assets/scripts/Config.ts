@@ -117,3 +117,7 @@ export type InputSpecialHolePopup = {
   specialType: HoleType;
   dataCover?: CoverData;
 }
+
+export type InputGroundPopup = {
+  groundData: GroundData;
+}
