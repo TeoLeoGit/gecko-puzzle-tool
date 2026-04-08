@@ -41,4 +41,16 @@ export class SpecialGeckoHandler {
             }
         }
     }
+
+    public static removeSpecialGecko(input: InputSpecialGeckoPopup) {
+        for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
+            const geckoBody = input.geckoParts[bodyIndex];
+            for (const child of [...geckoBody.node.children]) {
+                if (child.name.startsWith('StackedBody_')) {
+                    child.destroy();
+                }
+            }
+            geckoBody.setColor(input.geckoData.color);
+        }
+    }
 }

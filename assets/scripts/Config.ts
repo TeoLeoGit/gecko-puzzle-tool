@@ -1,6 +1,6 @@
 
 import { Node } from "cc";
-import { CarryItemType, ColorType, CoverType, GeckoType, GroundType, HoleType } from "./Type";
+import { CarryItemType, ColorType, CoverType, GeckoType, GroundType, HoleType, ItemLockType } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 
@@ -22,9 +22,8 @@ export interface CoverData {
 export type CarryItemData = {
   type: CarryItemType;
   geckoId?: number;
-  idUnlockGecko?: number;
+  colorLockType?: ItemLockType;
   targetGroundId?: number;
-  keyConsumeAmount?: number;
 }
 
 export type SpecialGeckoData = {

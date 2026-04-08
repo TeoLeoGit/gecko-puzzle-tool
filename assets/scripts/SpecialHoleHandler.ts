@@ -1,14 +1,16 @@
-import { _decorator, Component, Node } from 'cc';
-const { ccclass, property } = _decorator;
+import { Node } from 'cc';
 
-@ccclass('SpecialHoleHandler')
-export class SpecialHoleHandler extends Component {
-    start() {
+export class SpecialHoleHandler {
+    public static removeSpecialHole(rootNode: Node) {
+        if (!rootNode) {
+            return;
+        }
 
-    }
-
-    update(deltaTime: number) {
-        
+        for (const child of [...rootNode.children]) {
+            if (child.name.startsWith('SpecialHole_')) {
+                child.destroy();
+            }
+        }
     }
 }
 

@@ -81,3 +81,9 @@ export enum DesignMode {
   DeleteGround = 7,
   None = 100,
 }
+
+export enum ItemLockType
+{
+    Gold = 1,
+    Silver = 2
+}

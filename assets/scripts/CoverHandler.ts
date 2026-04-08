@@ -63,6 +63,34 @@ export class CoverHandler {
         }
     }
 
+    public static removeCoverForGecko(input: InputSpecialGeckoPopup, coverType?: CoverType) {
+        for (const geckoPart of input.geckoParts) {
+            const rootNode = geckoPart.node;
+            for (const child of [...rootNode.children]) {
+                if (!child.name.startsWith('Cover_')) {
+                    continue;
+                }
+
+                if (coverType == null || child.name.startsWith(`Cover_${coverType}_`)) {
+                    child.destroy();
+                }
+            }
+        }
+    }
+
+    public static removeCoverHole(input: InputSpecialHolePopup) {
+        const rootNode = input.holeComp?.node;
+        if (!rootNode) {
+            return;
+        }
+
+        for (const child of [...rootNode.children]) {
+            if (child.name.startsWith('Cover_')) {
+                child.destroy();
+            }
+        }
+    }
+
     private static addCoverNode(rootNode: Node, coverIndex: number, coverType: CoverType) {
         const coverNode = new Node(`Cover_${coverType}_${coverIndex}`);
         coverNode.setPosition(0, 0, 0);
