@@ -480,7 +480,12 @@ export class Tool extends Component {
                 prevBody = bodyComponent;
             }
 
-            if (gecko.type !== GeckoType.Normal || gecko.properties?.carryItem || gecko.Cover?.length) {
+            if (
+                gecko.type !== GeckoType.Normal
+                || (gecko.properties?.extraGeckoTypes?.length ?? 0) > 0
+                || gecko.properties?.carryItem
+                || gecko.Cover?.length
+            ) {
                 this.loadSpecialGecko(gecko);
             }
         }
@@ -1343,7 +1348,12 @@ export class Tool extends Component {
                 (requiredHoleByColor.get(gecko.color) ?? 0) + 1,
             );
 
-            if (gecko.type === GeckoType.Stacked) {
+            const allSpecialTypes = [
+                gecko.type,
+                ...(gecko.properties?.extraGeckoTypes ?? []),
+            ];
+
+            if (allSpecialTypes.findIndex(type => type === GeckoType.Stacked) !== -1) {
                 const stackColors = gecko.properties?.specialGecko?.stackColors ?? [];
                 for (const stackColor of stackColors) {
                     requiredHoleByColor.set(

@@ -42,7 +42,7 @@ export class PopupStackGecko extends Component {
 
         this.lockChosenColor(geckoColor, true);
 
-        if (input.specialType === GeckoType.Stacked) {
+        if (this.hasSpecialType(GeckoType.Stacked)) {
             const stackColors = input.dataSpecialGecko?.stackColors ?? [];
             for (const stackColor of stackColors) {
                 this.lockChosenColor(stackColor);
@@ -52,8 +52,6 @@ export class PopupStackGecko extends Component {
 
     onClickClose() {
         if (this._inputData?.geckoData) {
-            this._inputData.geckoData.type = GeckoType.Stacked;
-            this._inputData.specialType = GeckoType.Stacked;
             if (!this._inputData.geckoData.properties) {
                 this._inputData.geckoData.properties = {};
             }
@@ -64,6 +62,19 @@ export class PopupStackGecko extends Component {
         }
         EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
         this.node.active = false;
+    }
+
+    private hasSpecialType(geckoType: GeckoType): boolean {
+        if (!this._inputData?.geckoData) {
+            return false;
+        }
+
+        if (this._inputData.geckoData.type === geckoType) {
+            return true;
+        }
+
+        return (this._inputData.geckoData.properties?.extraGeckoTypes ?? [])
+                .findIndex(type => type ===geckoType) !== -1;
     }
 
     onSelectColor(event: CocosEvent, customEventData?: string) {

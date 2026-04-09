@@ -5,18 +5,15 @@ import { getColor, setSprite } from './Utils';
 
 export class SpecialGeckoHandler {
     public static addSpecialGecko(input: InputSpecialGeckoPopup) {
-        //Stacked gecko
-        if (input.geckoData.type === GeckoType.Stacked) {
-            const stackColors = input.dataSpecialGecko.stackColors ?? [];
+        this.removeSpecialGecko(input);
+
+        const geckoTypes = this.getAllSpecialTypes(input);
+
+        if (geckoTypes.findIndex(type => type === GeckoType.Stacked) !== -1) {
+            const stackColors = input.dataSpecialGecko?.stackColors ?? [];
             for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
                 const geckoBody = input.geckoParts[bodyIndex];
                 const rootNode = geckoBody.node;
-
-                for (const child of [...rootNode.children]) {
-                    if (child.name.startsWith('StackedBody_')) {
-                        child.destroy();
-                    }
-                }
 
                 for (let i = 0; i < stackColors.length; i++) {
                     const stackNode = new Node(`StackedBody_${i}`);
@@ -35,7 +32,7 @@ export class SpecialGeckoHandler {
             }
         }
 
-        if (input.geckoData.type === GeckoType.Hidden) {
+        if (geckoTypes.findIndex(type => type === GeckoType.Hidden) !== -1) {
             for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
                 input.geckoParts[bodyIndex].setColor(ColorType.Hidden);
             }
@@ -52,5 +49,21 @@ export class SpecialGeckoHandler {
             }
             geckoBody.setColor(input.geckoData.color);
         }
+    }
+
+    private static getAllSpecialTypes(input: InputSpecialGeckoPopup): GeckoType[] {
+        const types: GeckoType[] = [];
+        if (input.geckoData.type !== GeckoType.Normal) {
+            types.push(input.geckoData.type);
+        }
+
+        const extraTypes = input.geckoData.properties?.extraGeckoTypes ?? [];
+        for (const extraType of extraTypes) {
+            if (extraType !== GeckoType.Normal && !(types.findIndex(type => type === extraType) !== -1)) {
+                types.push(extraType);
+            }
+        }
+
+        return types;
     }
 }

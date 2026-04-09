@@ -101,7 +101,6 @@ export class GroundObject extends Component {
 
         if (type === GroundType.block) {
             setSprite('object_rock', this.sprGround);
-            log('sds');
             return;
         }
 
@@ -114,6 +113,7 @@ export class GroundObject extends Component {
         }
 
         if (type === GroundType.Stone_Wall) {
+            setSprite('object_rock', this.sprGround);
             return;
         }
 
