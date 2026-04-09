@@ -22,7 +22,7 @@ export class Cell extends Component {
     private _y: number = 0;
     private _isEmpty: boolean = true;
     private _isWall: boolean = false;
-    private _containBody: Node = null!;
+    private _containObject: Node = null!;
 
     protected onLoad(): void {
         EventManager.instance.on(Event.DELETE_ONE_BODY, this.onDeleteOneBody, this);
@@ -80,13 +80,13 @@ export class Cell extends Component {
     }
 
     private onDeleteOneBody(deleteBody: InputDeleteGridObject) {
-        if (deleteBody.rootObj === this._containBody) {
+        if (deleteBody.rootObj === this._containObject) {
             this.IsEmpty = true;
         }
     }
 
-    public setContainForGeckoBody(geckoBody: Node) {
-        this._containBody = geckoBody;
+    public setContainForObject(levelObject: Node) {
+        this._containObject = levelObject;
     }
 
     public reset() {

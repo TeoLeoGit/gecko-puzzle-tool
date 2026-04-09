@@ -459,7 +459,7 @@ export class Tool extends Component {
                 bodyNode.setWorldPosition(cell.node.worldPosition);
 
                 cell.IsEmpty = false;
-                cell.setContainForGeckoBody(bodyNode);
+                cell.setContainForObject(bodyNode);
 
                 const bodyComponent = bodyNode.getComponent(GeckoBody);
                 bodyComponent.setRoot(col, row);
@@ -530,7 +530,7 @@ export class Tool extends Component {
             holeNode.setWorldPosition(cell.node.worldPosition);
 
             cell.IsEmpty = false;
-            cell.setContainForGeckoBody(holeNode);
+            cell.setContainForObject(holeNode);
 
             const holeComponent = holeNode.getComponent(Hole);
             holeComponent.setHoleId(hole.id);
@@ -568,12 +568,10 @@ export class Tool extends Component {
             groundNode.setWorldPosition(cell.node.worldPosition);
 
             cell.IsEmpty = false;
-            cell.setContainForGeckoBody(groundNode);
+            cell.setContainForObject(groundNode);
 
             const groundComponent = groundNode.getComponent(GroundObject);
-            groundComponent.setGroundId(ground.id);
-            groundComponent.setRoot(col, row);
-            groundComponent.setType(ground.type);
+            groundComponent.applyGroundData(ground);
         }
 
         this._idGroundIncrement = maxGroundId + 1;
@@ -628,6 +626,9 @@ export class Tool extends Component {
         }
         if (this._draggedHole) {
             this._draggedHole.getComponent(Hole).setColor(Global.ColorType);
+        }
+        if (this._draggedGround) {
+            this._draggedGround.getComponent(GroundObject).setColor(Global.ColorType);
         }
     }
 
@@ -866,6 +867,7 @@ export class Tool extends Component {
             groundComponent.setupGround(this._idGroundIncrement, rootCell.X, rootCell.Y, Global.GroundType);
 
             const groundData = groundComponent.createGroundData();
+            groundComponent.applyGroundData(groundData);
             this.addGroundData(groundData);
             groundComponent.showPropertiesPopup(groundData);
         } else {
@@ -1047,7 +1049,7 @@ export class Tool extends Component {
         const rootCell = root.getComponent(Cell);
         if (rootCell.IsEmpty && !rootCell.IsWall) {
             rootCell.IsEmpty = false;
-            rootCell.setContainForGeckoBody(geckoBody);
+            rootCell.setContainForObject(geckoBody);
             return true;
         }
         return false;

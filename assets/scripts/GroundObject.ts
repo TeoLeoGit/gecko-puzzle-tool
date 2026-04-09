@@ -1,9 +1,10 @@
-import { _decorator, Button, Component, Sprite, Vec2 } from 'cc';
+import { _decorator, Color, Button, Component, Sprite, Vec2, UIOpacity, log } from 'cc';
 import { GroundData, InputGroundPopup } from './Config';
 import { Event } from './Constant';
 import EventManager from './EventManager';
-import { GroundType } from './Type';
-import { setSprite } from './Utils';
+import { Global } from './Global';
+import { ColorType, GroundType } from './Type';
+import { getColor, setSprite } from './Utils';
 const { ccclass, property } = _decorator;
 
 @ccclass('GroundObject')
@@ -43,6 +44,20 @@ export class GroundObject extends Component {
         this.setType(type);
     }
 
+    applyGroundData(groundData: GroundData) {
+        this.setupGround(groundData.id, groundData.c, groundData.r, groundData.type);
+
+        if (!this.sprGround) {
+            return;
+        }
+
+        if (groundData.type === GroundType.Color_Path) {
+            const color = groundData.properties?.color;
+            this.sprGround.color = color != null ? getColor(color as ColorType) : Color.WHITE.clone();
+            return;
+        }
+    }
+
     createGroundData(): GroundData {
         return {
             id: this._groundId,
@@ -51,7 +66,9 @@ export class GroundObject extends Component {
             c: this._x,
             properties: this._groundType === GroundType.Stone_Wall
                 ? { count: 1 }
-                : {},
+                : this._groundType === GroundType.Color_Path
+                    ? { color: Global.ColorType }
+                    : {},
         };
     }
 
@@ -78,12 +95,21 @@ export class GroundObject extends Component {
         //     return;
         // }
 
+        this.sprGround.color = new Color(255, 255, 255, 255);
+        const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
+        opacity.opacity = Math.round(255);
+
         if (type === GroundType.block) {
             setSprite('object_rock', this.sprGround);
+            log('sds');
             return;
         }
 
         if (type === GroundType.Color_Path) {
+            setSprite('color_path', this.sprGround);
+            this.sprGround.color = getColor(Global.ColorType);
+            const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
+            opacity.opacity = Math.round(255 * 0.6);
             return;
         }
 
@@ -106,5 +132,17 @@ export class GroundObject extends Component {
         if (type === GroundType.Sliding_Gate) {
             return;
         }
+    }
+
+    setColor(color: ColorType) {
+        if (this._groundType === GroundType.Color_Path) {
+            this.sprGround.color = getColor(color);
+            const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
+            opacity.opacity = Math.round(255 * 0.6);
+            return;
+        }
+        this.sprGround.color = new Color(255, 255, 255, 255);
+        const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
+        opacity.opacity = Math.round(255);
     }
 }

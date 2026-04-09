@@ -65,8 +65,7 @@ export type HoleProperties = {
 }
 
 export type CoverProperties = {
-  //ice cover
-  count?: number;
+  count?: number; //ice cover
 }
 
 export type GroundData = {
@@ -78,7 +77,8 @@ export type GroundData = {
 }
 
 export type GroundProperties = {
-  count?: number;
+  count?: number; //Stone_wall
+  color?: ColorType; //Color_path
 }
 
 export type LevelData = {

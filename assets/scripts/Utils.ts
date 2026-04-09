@@ -45,14 +45,17 @@ export const getColor = (color: ColorType): Color => {
         case ColorType.LightRed:
             return new Color(0xFF, 0x71, 0x6F, 0xFF);
 
-        case ColorType.MudBrown:
-            return new Color(0x6D, 0x22, 0x02, 0xFF);
+        case ColorType.LightOrange:
+            return new Color(0xC7, 0xAB, 0x75, 0xFF);
 
         case ColorType.LightPink:
             return new Color(0xFF, 0xA2, 0xEB, 0xFF);
 
         case ColorType.LightBrown:
             return new Color(0xAF, 0x6A, 0x73, 0xFF);
+
+        case ColorType.DarkBlue:
+            return new Color(0x27, 0x18, 0x98, 0xFF);
 
         default:
             return Color.WHITE.clone();
@@ -75,9 +78,11 @@ export const getColorName = (color: number): string => {
         case 11: return 'DarkGreen';
         case 12: return 'MossGreen';
         case 13: return 'LightRed';
-        case 14: return 'MudBrown';
+        case 14: return 'LightOrange';
         case 15: return 'LightPink';
         case 16: return 'LightBrown';
+        case 17: return 'DarkBlue';
+
         case 20: return 'Hidden';
         case 21: return 'Masked';
         case 22: return 'Sick';
