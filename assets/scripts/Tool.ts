@@ -617,21 +617,23 @@ export class Tool extends Component {
             const row = ground?.r;
             const col = ground?.c;
             const cell = this._grid[row]?.[col];
+            const isBlockingGround = GroundObject.isBlockingType(ground?.type);
 
             maxGroundId = Math.max(maxGroundId, ground?.id ?? -1);
-            if (!cell || !cell.node.active || cell.IsWall || !cell.IsEmpty) {
-                continue;
-            }
-
+            if (!cell || !cell.node.active || cell.IsWall || this.hasGroundAt(col, row)) continue;
+            if (isBlockingGround && !cell.IsEmpty) continue;
+            
             const groundNode = instantiate(this.groundPrefab);
             this.groundParent.addChild(groundNode);
             groundNode.setWorldPosition(cell.node.worldPosition);
 
-            cell.IsEmpty = false;
-            cell.setContainForObject(groundNode);
-
             const groundComponent = groundNode.getComponent(GroundObject);
             groundComponent.applyGroundData(ground);
+
+            if (isBlockingGround) {
+                cell.IsEmpty = false;
+                cell.setContainForObject(groundNode);
+            }
         }
 
         this._idGroundIncrement = maxGroundId + 1;
@@ -962,8 +964,8 @@ export class Tool extends Component {
     createGroundAt(position: Vec3) {
         const rootCell = this._rootCell.getComponent(Cell);
         const newGround = instantiate(this.groundPrefab);
+        const canCreate = this.canCreateGroundAt(this._rootCell, Global.GroundType, newGround);
 
-        const canCreate = this.fillEmptyCell(this._rootCell, newGround);
         if (canCreate) {
             this.groundParent.addChild(newGround);
             newGround.setWorldPosition(position);
@@ -1137,7 +1139,7 @@ export class Tool extends Component {
         if (!targetCellNode) return;
 
         const targetCell = targetCellNode.getComponent(Cell);
-        if (!targetCell || targetCell.IsEmpty) return;
+        if (!targetCell) return;
 
         const targetGround = this.groundParent.children.find((groundNode) => {
             const groundComp = groundNode.getComponent(GroundObject);
@@ -1202,6 +1204,18 @@ export class Tool extends Component {
         this._idGroundIncrement++;
     }
 
+    hasGroundAt(x: number, y: number): boolean {
+        return this.groundParent.children.some((groundNode) => {
+            const groundComp = groundNode.getComponent(GroundObject);
+            if (!groundComp) {
+                return false;
+            }
+
+            const rootPos = groundComp.RootPos;
+            return rootPos.x === x && rootPos.y === y;
+        });
+    }
+
     addCoverData(coverData: LevelCoverData) {
         this._editLevelData.Cover ??= [];
         this._editLevelData.Cover.push(coverData);
@@ -1232,6 +1246,19 @@ export class Tool extends Component {
             return true;
         }
         return false;
+    }
+
+    canCreateGroundAt(root: Node, groundType: GroundType, groundNode: Node): boolean {
+        const rootCell = root.getComponent(Cell);
+        if (!rootCell || rootCell.IsWall || this.hasGroundAt(rootCell.X, rootCell.Y)) {
+            return false;
+        }
+
+        if (!GroundObject.isBlockingType(groundType)) {
+            return true;
+        }
+
+        return this.fillEmptyCell(root, groundNode);
     }
 
     isConnectedBodyPart(x: number, y: number): boolean {

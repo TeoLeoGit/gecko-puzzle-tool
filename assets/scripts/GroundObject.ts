@@ -29,6 +29,10 @@ export class GroundObject extends Component {
         return type === GroundType.Stone_Wall;
     }
 
+    public static isBlockingType(type: GroundType): boolean {
+        return type !== GroundType.Color_Path;
+    }
+
     setGroundId(id: number) {
         this._groundId = id;
     }
