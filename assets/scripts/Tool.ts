@@ -136,6 +136,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
         EventManager.instance.on(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
         EventManager.instance.on(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole, this);
+        EventManager.instance.on(Event.UPDATE_COVERED_CELLS, this.markCoveredCells, this);
 
         this.initGrid();
         this.init();
@@ -158,6 +159,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
         EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
         EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole);
+        EventManager.instance.off(Event.UPDATE_COVERED_CELLS, this.markCoveredCells);
     }
 
     onMouseDown(event: EventMouse) {
@@ -653,7 +655,7 @@ export class Tool extends Component {
             const cell = this._grid[row]?.[col];
 
             maxCoverId = Math.max(maxCoverId, cover?.id ?? -1);
-            if (!cell || !cell.node.active || cell.IsWall || this.hasCoverAt(col, row)) {
+            if (!cell || !cell.node.active || cell.IsWall) {
                 continue;
             }
 
@@ -663,6 +665,7 @@ export class Tool extends Component {
 
             const coverComponent = coverNode.getComponent(CoverObject);
             coverComponent?.applyCoverData(cover);
+            this.markCoveredCells(coverComponent, true);
         }
 
         this._idCoverIncrement = maxCoverId + 1;
@@ -982,15 +985,11 @@ export class Tool extends Component {
     }
 
     createCoverAt(position: Vec3) {
-        if (!this.coverParent || !this.coverPrefab) {
-            return;
-        }
-
         const rootCell = this._rootCell.getComponent(Cell);
-        if (!rootCell || rootCell.IsWall || this.hasCoverAt(rootCell.X, rootCell.Y)) {
+        if (!rootCell || rootCell.IsWall || rootCell.IsCovered) {
             return;
         }
-
+        
         const newCover = instantiate(this.coverPrefab);
         this.coverParent.addChild(newCover);
         newCover.setWorldPosition(position);
@@ -1000,10 +999,11 @@ export class Tool extends Component {
             newCover.destroy();
             return;
         }
-
+        
         coverComponent.setupCover(this._idCoverIncrement, rootCell.X, rootCell.Y, Global.CoverType);
-
+        
         const coverData = coverComponent.createCoverData();
+
         coverComponent.applyCoverData(coverData);
         this.addCoverData(coverData);
         coverComponent.showPropertiesPopup(coverData);
@@ -1184,6 +1184,7 @@ export class Tool extends Component {
         });
         if (!targetCover) return;
 
+        this.markCoveredCells(targetCover.getComponent(CoverObject), false);
         targetCover.destroy();
 
         this._editLevelData.Cover = (this._editLevelData.Cover ?? []).filter((cover) => {
@@ -1236,6 +1237,44 @@ export class Tool extends Component {
             const rootPos = coverComp.RootPos;
             return rootPos.x === x && rootPos.y === y;
         });
+    }
+
+    isCoverAreaOccupied(coverData: LevelCoverData): boolean {
+        const rowEnd = coverData.properties?.rowEnd ?? coverData.r;
+        const colEnd = coverData.properties?.colEnd ?? coverData.c;
+        const minRow = Math.min(coverData.r, rowEnd);
+        const maxRow = Math.max(coverData.r, rowEnd);
+        const minCol = Math.min(coverData.c, colEnd);
+        const maxCol = Math.max(coverData.c, colEnd);
+
+        for (let row = minRow; row <= maxRow; row++) {
+            for (let col = minCol; col <= maxCol; col++) {
+                const cell = this._grid[row]?.[col];
+                if (!cell || !cell.node.active || cell.IsWall || cell.IsCovered) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    markCoveredCells(coverComp: CoverObject | null, covered: boolean = true) {
+        if (!coverComp) {
+            return;
+        }
+
+        const { minRow, maxRow, minCol, maxCol } = coverComp.CoveredBounds;
+        for (let row = minRow; row <= maxRow; row++) {
+            for (let col = minCol; col <= maxCol; col++) {
+                const cell = this._grid[row]?.[col];
+                if (!cell || !cell.node.active) {
+                    continue;
+                }
+
+                cell.IsCovered = covered;
+            }
+        }
     }
 
     fillEmptyCell(root: Node, geckoBody: Node): boolean {

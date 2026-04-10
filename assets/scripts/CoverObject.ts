@@ -1,10 +1,16 @@
-import { _decorator, Color, Component, log, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
+import { _decorator, Color, Component, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
 import { CoverProperties, InputCoverPopup, LevelCoverData } from './Config';
 import { Event } from './Constant';
 import EventManager from './EventManager';
 import { CoverType } from './Type';
 import { setSprite } from './Utils';
 const { ccclass, property } = _decorator;
+
+const CELL_WIDTH = 100;
+const CELL_HEIGHT = 94;
+const BASE_SPRITE_WIDTH = 100;
+const BASE_SPRITE_HEIGHT = 98;
+const CRATE_OFFSET_DIVIDE = 10 / 3;
 
 @ccclass('CoverObject')
 export class CoverObject extends Component {
@@ -17,18 +23,12 @@ export class CoverObject extends Component {
     private _coverType: CoverType = CoverType.None;
     private _coverData: LevelCoverData | null = null;
 
-    //crate
-    private _rowEnd: number = 1;
-    private _colEnd: number = 1;
+    protected onLoad(): void {
+        EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual, this);
+    }
 
-
-    protected update(dt: number): void {
-        if (!this._coverData) return;
-        if (this._rowEnd !== this._coverData.r || this._colEnd !== this._coverData.c) {
-            this.refreshVisual();
-            this._colEnd = this._coverData.c;
-            this._rowEnd = this._coverData.r;
-        } 
+    protected onDestroy(): void {
+        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual);
     }
 
     public get RootPos(): Vec2 {
@@ -37,6 +37,18 @@ export class CoverObject extends Component {
 
     public get CoverType(): CoverType {
         return this._coverType;
+    }
+
+    public get CoveredBounds() {
+        const rowEnd = this._coverData?.properties?.rowEnd ?? this._y;
+        const colEnd = this._coverData?.properties?.colEnd ?? this._x;
+
+        return {
+            minRow: Math.min(this._y, rowEnd),
+            maxRow: Math.max(this._y, rowEnd),
+            minCol: Math.min(this._x, colEnd),
+            maxCol: Math.max(this._x, colEnd),
+        };
     }
 
     public static hasEditableProperties(type: CoverType): boolean {
@@ -61,8 +73,7 @@ export class CoverObject extends Component {
     applyCoverData(coverData: LevelCoverData) {
         this._coverData = coverData;
         this.setupCover(coverData.id, coverData.c, coverData.r, coverData.type);
-        this._colEnd = coverData.c;
-        this._rowEnd = coverData.r;
+        this.refreshVisual();
     }
 
     createCoverData(): LevelCoverData {
@@ -93,9 +104,16 @@ export class CoverObject extends Component {
             return;
         }
 
+        this.sprCover.spriteFrame = null;
         this.sprCover.color = new Color(255, 255, 255, 255);
         const opacity = this.sprCover.getComponent(UIOpacity) ?? this.sprCover.addComponent(UIOpacity);
         opacity.opacity = Math.round(255 * 0.85);
+        this.resetSpriteTransform();
+
+        if (type === CoverType.None) {
+            opacity.opacity = 0;
+            return;
+        }
 
         if (type === CoverType.Crate) {
             setSprite('cover_crate', this.sprCover);
@@ -110,26 +128,44 @@ export class CoverObject extends Component {
     }
 
     private refreshVisual() {
+        this.resetSpriteTransform();
+
         const spriteNode = this.sprCover.node;
         const spriteTransform = spriteNode.getComponent(UITransform);
-        log(this.node.parent);
-        log(JSON.stringify(this._coverData));
+        if (!spriteTransform) {
+            return;
+        }
 
         if (this._coverType !== CoverType.Crate || !this._coverData?.properties) return;
 
-        const rowEnd = Math.max(this._y, this._coverData.properties.rowEnd ?? this._y);
-        const colEnd = Math.max(this._x, this._coverData.properties.colEnd ?? this._x);
+        const { minRow, maxRow, minCol, maxCol } = this.CoveredBounds;
+        const rowEnd = this._coverData.properties.rowEnd ?? this._y;
+        const colEnd = this._coverData.properties.colEnd ?? this._x;
 
-        const spanCols = colEnd - this._x + 1;
-        const spanRows = rowEnd - this._y + 1;
+        const spanCols = maxCol - minCol + 1;
+        const spanRows = maxRow - minRow + 1;
 
-        const width = spriteTransform.contentSize.width * spanCols;
-        const height = spriteTransform.contentSize.height * spanRows;
+        const width = BASE_SPRITE_WIDTH * spanCols;
+        const height = BASE_SPRITE_HEIGHT * spanRows;
         spriteTransform.setContentSize(width, height);
 
-        const offsetX = ((spanCols - 1) * 100) / 2.75;
-        const offsetY = ((spanRows - 1) * 94) / 2.75;
+        const colDirection = colEnd >= this._x ? 1 : -1;
+        const rowDirection = rowEnd >= this._y ? 1 : -1;
+        const offsetX = ((spanCols - 1) * CELL_WIDTH) / CRATE_OFFSET_DIVIDE * colDirection;
+        const offsetY = ((spanRows - 1) * CELL_HEIGHT) / CRATE_OFFSET_DIVIDE * rowDirection;
         spriteNode.setPosition(offsetX, offsetY, 0);
+        EventManager.instance.emit(Event.UPDATE_COVERED_CELLS, this);
+    }
+
+    private resetSpriteTransform() {
+        const spriteNode = this.sprCover.node;
+        const spriteTransform = spriteNode.getComponent(UITransform);
+        if (!spriteTransform) {
+            return;
+        }
+
+        spriteTransform.setContentSize(BASE_SPRITE_WIDTH, BASE_SPRITE_HEIGHT);
+        spriteNode.setPosition(0, 0, 0);
     }
 
     private createDefaultProperties(): CoverProperties {
@@ -150,5 +186,3 @@ export class CoverObject extends Component {
         return {};
     }
 }
-
-

@@ -22,6 +22,7 @@ export class Cell extends Component {
     private _y: number = 0;
     private _isEmpty: boolean = true;
     private _isWall: boolean = false;
+    private _isCovered: boolean = false;
     private _containObject: Node = null!;
 
     protected onLoad(): void {
@@ -50,6 +51,14 @@ export class Cell extends Component {
 
     public get IsWall(): boolean {
         return this._isWall;
+    }
+
+    public get IsCovered(): boolean {
+        return this._isCovered;
+    }
+
+    public set IsCovered(covered: boolean) {
+        this._isCovered = covered;
     }
 
     public init(x: number, y: number) {
@@ -95,6 +104,7 @@ export class Cell extends Component {
         this.debugGrid = `${this._x}, ${this._y}`;
         this._isEmpty = true;
         this._isWall = false;
+        this._isCovered = false;
 
         this.sprite.node.active = true;
         const oldColor = this.sprite.color;
