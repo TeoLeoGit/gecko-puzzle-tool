@@ -1,8 +1,9 @@
 import { _decorator, Camera, Component, EditBox, EventKeyboard, EventMouse, Input, input, instantiate, KeyCode, Label, Layout, log, Node, Prefab, Toggle, UITransform, Vec3 } from "cc";
 import { Cell } from "./Cell";
-import { Config, GeckoData, GeckoPart, GroundData, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, LevelData } from "./Config";
+import { Config, GeckoData, GeckoPart, GroundData, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, LevelCoverData, LevelData } from "./Config";
 import { Event } from './Constant';
 import { CoverHandler } from "./CoverHandler";
+import { CoverObject } from "./CoverObject";
 import { Data } from "./Data";
 import EventManager from "./EventManager";
 import { GeckoBody } from "./GeckoBody";
@@ -11,7 +12,7 @@ import { Global } from "./Global";
 import { GroundObject } from "./GroundObject";
 import { Hole } from "./Hole";
 import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
-import { DesignMode, GeckoType, GroundType, HoleType } from "./Type";
+import { CoverType, DesignMode, GeckoType, GroundType, HoleType } from "./Type";
 import { getColorName } from "./Utils";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
@@ -33,6 +34,9 @@ export class Tool extends Component {
 
     @property(Node)
     groundParent: Node = null!;
+
+    @property(Node)
+    coverParent: Node = null!;
 
     @property(Node)
     previewLayer: Node = null!;
@@ -67,6 +71,9 @@ export class Tool extends Component {
     @property(Prefab)
     groundPrefab: Prefab = null!;
 
+    @property(Prefab)
+    coverPrefab: Prefab = null!;
+
     @property(EditBox)
     editBoxCol: EditBox = null!;
 
@@ -84,6 +91,7 @@ export class Tool extends Component {
     
     private _draggedGeckoBody: Node | null = null;
     private _draggedGround: Node | null = null;
+    private _draggedCover: Node | null = null;
     private _draggedHole:      Node | null = null;
     private _mousePos: Vec3 = new Vec3();
     private _mouseDown: boolean = false;
@@ -93,6 +101,7 @@ export class Tool extends Component {
     private _levelNumb: number = 0;
     private _idGeckoIncrement: number = 0;
     private _idGroundIncrement: number = 0;
+    private _idCoverIncrement: number = 0;
     private _idHoleIncrement:  number = 0;
     private _sectionBodies: GeckoBody[] = [];
     private _currentGeckoData: GeckoData;
@@ -169,6 +178,11 @@ export class Tool extends Component {
             if (snappedPos) this.createGroundAt(snappedPos);
             return;
         }
+        if (Global.DesignMode === DesignMode.CreateCover) {
+            const snappedPos = this.getClosestGridPosition(this._draggedCover.worldPosition);
+            if (snappedPos) this.createCoverAt(snappedPos);
+            return;
+        }
         if (Global.DesignMode === DesignMode.DeleteHole) {
             const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
             this.deleteHole(snappedPos);
@@ -177,6 +191,11 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.DeleteGround) {
             const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
             this.deleteGround(snappedPos);
+            return;
+        }
+        if (Global.DesignMode === DesignMode.DeleteCover) {
+            const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this.deleteCover(snappedPos);
             return;
         }
     }
@@ -263,6 +282,17 @@ export class Tool extends Component {
         this._draggedGround?.getComponent(GroundObject)?.setType(Global.GroundType);
         this.onChooseGroundDesignMode();
     }
+
+    onChangeCoverType(_event?: unknown, customEventData?: string) {
+        const parsed = Number(customEventData);
+        if (isNaN(parsed)) {
+            return;
+        }
+
+        Global.CoverType = parsed as CoverType;
+        this._draggedCover?.getComponent(CoverObject)?.setType(Global.CoverType);
+        this.onChooseCoverDesignMode();
+    }
     
     onMouseMove(event: EventMouse) {
         if (Global.DesignMode === DesignMode.CreateGecko) {
@@ -280,6 +310,12 @@ export class Tool extends Component {
         if (Global.DesignMode === DesignMode.CreateGround) {
             const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
             this._draggedGround.setWorldPosition(worldPos);
+            this._mousePos = worldPos;
+        }
+
+        if (Global.DesignMode === DesignMode.CreateCover) {
+            const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this._draggedCover.setWorldPosition(worldPos);
             this._mousePos = worldPos;
         }
 
@@ -302,8 +338,18 @@ export class Tool extends Component {
             this.createWall(event);
         }
 
+        if (Global.DesignMode === DesignMode.CreateCover) {
+            const snappedPos = this.getClosestGridPosition(this._draggedCover.worldPosition);
+            if (snappedPos) this.createCoverAt(snappedPos);
+        }
+
         if (Global.DesignMode === DesignMode.DeleteWall) {
             this.deleteWall(event);
+        }
+
+        if (Global.DesignMode === DesignMode.DeleteCover) {
+            const snappedPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
+            this.deleteCover(snappedPos);
         }
     }
 
@@ -338,6 +384,14 @@ export class Tool extends Component {
             ground.setPosition(groundPos);
             ground.getComponent(GroundObject)?.setType(Global.GroundType);
             this._draggedGround = ground;
+        }
+        if (!this._draggedCover && this.coverPrefab) {
+            const cover = instantiate(this.coverPrefab);
+            this.previewLayer.addChild(cover);
+            const coverPos = this.previewLayer.getComponent(UITransform).convertToNodeSpaceAR(this._mousePos);
+            cover.setPosition(coverPos);
+            cover.getComponent(CoverObject)?.setType(Global.CoverType);
+            this._draggedCover = cover;
         }
     }
 
@@ -418,6 +472,7 @@ export class Tool extends Component {
             this.loadGrounds(data.grounds);
             this.loadGeckos(data.geckos);
             this.loadHoles(data.holes);
+            this.loadCovers(data.Cover ?? []);
         }, 0.3);
 
         this.node.active = true;
@@ -582,6 +637,35 @@ export class Tool extends Component {
         this._idGroundIncrement = maxGroundId + 1;
     }
 
+    loadCovers(coverData: LevelCoverData[]) {
+        this._idCoverIncrement = 0;
+
+        if (!Array.isArray(coverData) || coverData.length === 0 || !this.coverParent || !this.coverPrefab) {
+            return;
+        }
+
+        let maxCoverId = -1;
+        for (const cover of coverData) {
+            const row = cover?.r;
+            const col = cover?.c;
+            const cell = this._grid[row]?.[col];
+
+            maxCoverId = Math.max(maxCoverId, cover?.id ?? -1);
+            if (!cell || !cell.node.active || cell.IsWall || this.hasCoverAt(col, row)) {
+                continue;
+            }
+
+            const coverNode = instantiate(this.coverPrefab);
+            this.coverParent.addChild(coverNode);
+            coverNode.setWorldPosition(cell.node.worldPosition);
+
+            const coverComponent = coverNode.getComponent(CoverObject);
+            coverComponent?.applyCoverData(cover);
+        }
+
+        this._idCoverIncrement = maxCoverId + 1;
+    }
+
     loadSpecialHole(holeData: HoleData, holeComp: Hole) {
         if (!holeData || !holeComp) {
             return;
@@ -701,6 +785,7 @@ export class Tool extends Component {
         this.clearGeckoBodies();
         this.clearGrounds();
         this.clearHoles();
+        this.clearCovers();
         this.initWalls(col, row);
     }
 
@@ -762,14 +847,28 @@ export class Tool extends Component {
         }
     }
 
+    clearCovers() {
+        if (!this.coverParent) {
+            return;
+        }
+
+        for (const child of [...this.coverParent.children]) {
+            if (child.getComponent(CoverObject)) {
+                child.destroy();
+            }
+        }
+    }
+
     private clearPlacedObjectsData() {
         this._editLevelData.geckos = [];
         this._editLevelData.grounds = [];
         this._editLevelData.holes = [];
+        this._editLevelData.Cover = [];
         this._sectionBodies = [];
         this._currentGeckoData = null;
         this._idGeckoIncrement = 0;
         this._idGroundIncrement = 0;
+        this._idCoverIncrement = 0;
         this._idHoleIncrement = 0;
         this._mapGeckoIdAndParts.clear();
     }
@@ -878,6 +977,34 @@ export class Tool extends Component {
         } else {
             newGround.destroy();
         }
+    }
+
+    createCoverAt(position: Vec3) {
+        if (!this.coverParent || !this.coverPrefab) {
+            return;
+        }
+
+        const rootCell = this._rootCell.getComponent(Cell);
+        if (!rootCell || rootCell.IsWall || this.hasCoverAt(rootCell.X, rootCell.Y)) {
+            return;
+        }
+
+        const newCover = instantiate(this.coverPrefab);
+        this.coverParent.addChild(newCover);
+        newCover.setWorldPosition(position);
+
+        const coverComponent = newCover.getComponent(CoverObject);
+        if (!coverComponent) {
+            newCover.destroy();
+            return;
+        }
+
+        coverComponent.setupCover(this._idCoverIncrement, rootCell.X, rootCell.Y, Global.CoverType);
+
+        const coverData = coverComponent.createCoverData();
+        coverComponent.applyCoverData(coverData);
+        this.addCoverData(coverData);
+        coverComponent.showPropertiesPopup(coverData);
     }
 
     createWall(event: EventMouse) {
@@ -1037,6 +1164,31 @@ export class Tool extends Component {
         });
     }
 
+    deleteCover(position: Vec3) {
+        if (!this.coverParent) return;
+
+        const targetCellNode = this.findCellAt(position);
+        if (!targetCellNode) return;
+
+        const targetCell = targetCellNode.getComponent(Cell);
+        if (!targetCell) return;
+
+        const targetCover = this.coverParent.children.find((coverNode) => {
+            const coverComp = coverNode.getComponent(CoverObject);
+            if (!coverComp) return false;
+
+            const rootPos = coverComp.RootPos;
+            return rootPos.x === targetCell.X && rootPos.y === targetCell.Y;
+        });
+        if (!targetCover) return;
+
+        targetCover.destroy();
+
+        this._editLevelData.Cover = (this._editLevelData.Cover ?? []).filter((cover) => {
+            return !(cover.c === targetCell.X && cover.r === targetCell.Y);
+        });
+    }
+
     deleteWall(event: EventMouse) {
         const worldPos = this.screenToWorld(new Vec3(event.getLocation().x, event.getLocation().y, 0));
         const targetCell = this.findCellAt(worldPos);
@@ -1048,6 +1200,28 @@ export class Tool extends Component {
     addGroundData(groundData: GroundData) {
         this._editLevelData.grounds.push(groundData);
         this._idGroundIncrement++;
+    }
+
+    addCoverData(coverData: LevelCoverData) {
+        this._editLevelData.Cover ??= [];
+        this._editLevelData.Cover.push(coverData);
+        this._idCoverIncrement++;
+    }
+
+    hasCoverAt(x: number, y: number): boolean {
+        if (!this.coverParent) {
+            return false;
+        }
+
+        return this.coverParent.children.some((coverNode) => {
+            const coverComp = coverNode.getComponent(CoverObject);
+            if (!coverComp) {
+                return false;
+            }
+
+            const rootPos = coverComp.RootPos;
+            return rootPos.x === x && rootPos.y === y;
+        });
     }
 
     fillEmptyCell(root: Node, geckoBody: Node): boolean {
@@ -1145,6 +1319,30 @@ export class Tool extends Component {
         Global.DesignMode = DesignMode.DeleteGround;
     }
 
+    onChooseCoverDesignMode() {
+        if (Global.DesignMode === DesignMode.CreateCover) {
+            this.clearDesignMode();
+            this._draggedCover && (this._draggedCover.active = false);
+            return;
+        }
+
+        this.clearDesignMode();
+        if (this._draggedCover) {
+            this._draggedCover.active = true;
+        }
+        Global.DesignMode = DesignMode.CreateCover;
+    }
+
+    onChooseCoverDeleteMode() {
+        if (Global.DesignMode === DesignMode.DeleteCover) {
+            this.clearDesignMode();
+            return;
+        }
+
+        this.clearDesignMode();
+        Global.DesignMode = DesignMode.DeleteCover;
+    }
+
     onChooseWallDesignMode() {
         if (Global.DesignMode === DesignMode.CreateWall) {
             this.clearDesignMode();
@@ -1231,6 +1429,7 @@ export class Tool extends Component {
         this._draggedGeckoBody.active = false;
         this._draggedGround.active = false;
         this._draggedHole.active = false;
+        this._draggedCover.active = false;
         this.btnDesginHole.getChildByName("Sprite_check").active = false;
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
@@ -1424,9 +1623,10 @@ export class Tool extends Component {
 
     onReturnWithoutSave() {
         this.clearDesignMode();
+        this.clearGeckoBodies();
         this.clearGrounds();
         this.clearHoles();
-        this.clearGeckoBodies();
+        this.clearCovers();
         this.node.active = false;
         EventManager.instance.emit(Event.OPEN_MENU);
     }

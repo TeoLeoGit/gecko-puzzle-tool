@@ -80,6 +80,8 @@ export enum DesignMode {
   DeleteHole = 5,
   CreateGround = 6,
   DeleteGround = 7,
+  CreateCover = 8,
+  DeleteCover = 9,
   None = 100,
 }
 

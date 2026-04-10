@@ -66,7 +66,9 @@ export type HoleProperties = {
 }
 
 export type CoverProperties = {
-  count?: number; //ice cover
+  count?: number; //ice cover, crate
+  rowEnd?: number; //crate
+  colEnd?: number; //crate
 }
 
 export type GroundData = {
@@ -82,6 +84,14 @@ export type GroundProperties = {
   color?: ColorType; //Color_path
 }
 
+export type LevelCoverData = {
+  id: number;
+  r: number;
+  c: number;
+  type: CoverType;
+  properties?: CoverProperties;
+}
+
 export type LevelData = {
   level: number;
   time: number;
@@ -92,7 +102,7 @@ export type LevelData = {
   grounds: GroundData[];
   holes: HoleData[];
   geckos: GeckoData[];
-  Cover: [];
+  Cover?: LevelCoverData[];
 }
 
 export type InputDeleteGridObject = {
@@ -120,4 +130,8 @@ export type InputSpecialHolePopup = {
 
 export type InputGroundPopup = {
   groundData: GroundData;
+}
+
+export type InputCoverPopup = {
+  coverData: LevelCoverData;
 }
