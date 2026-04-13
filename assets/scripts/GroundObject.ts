@@ -24,6 +24,7 @@ export class GroundObject extends Component {
     private _groundType: GroundType = GroundType.normal;
     private _groundData: GroundData | null = null;
     private _ropeSprites: Node[] = [];
+    private _slidingGateSprites: Node[] = [];
     private _dirArrowNodes: Node[] = [];
 
     private static readonly ROPE_SEGMENT_SPACING = 60;
@@ -36,6 +37,7 @@ export class GroundObject extends Component {
     protected onDestroy(): void {
         EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual);
         this.clearRopeSprites();
+        this.clearSlidingGateSprites();
         this.clearDirectionArrow();
     }
 
@@ -60,7 +62,10 @@ export class GroundObject extends Component {
     }
 
     public static hasEditableProperties(type: GroundType): boolean {
-        return type === GroundType.Stone_Wall || type === GroundType.Rope || type === GroundType.Moveable_Box;
+        return type === GroundType.Stone_Wall
+            || type === GroundType.Rope
+            || type === GroundType.Moveable_Box
+            || type === GroundType.Sliding_Gate;
     }
 
     public static isBlockingType(type: GroundType): boolean {
@@ -109,8 +114,13 @@ export class GroundObject extends Component {
         }
 
         if (groundData.type === GroundType.Moveable_Box) {
-            this.refreshMoveableBoxVisual();
+            this.refreshSpanGroundVisual();
             this.refreshMoveableBoxDirectionArrow();
+            return;
+        }
+
+        if (groundData.type === GroundType.Sliding_Gate) {
+            this.refreshSlidingGateVisual();
             return;
         }
 
@@ -141,6 +151,11 @@ export class GroundObject extends Component {
             return;
         }
 
+        if (this._groundType === GroundType.Sliding_Gate) {
+            EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, input);
+            return;
+        }
+
         EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, input);
     }
 
@@ -154,6 +169,10 @@ export class GroundObject extends Component {
         if (type !== GroundType.Rope) {
             this.clearRopeSprites();
             this.clearIdLabel();
+        }
+
+        if (type !== GroundType.Sliding_Gate) {
+            this.clearSlidingGateSprites();
         }
 
         if (type !== GroundType.Moveable_Box) {
@@ -200,7 +219,7 @@ export class GroundObject extends Component {
         if (type === GroundType.Moveable_Box) {
             setSprite('object_movable_box', this.sprGround, () => {
                 if (this._groundType === GroundType.Moveable_Box) {
-                    this.refreshMoveableBoxVisual();
+                    this.refreshSpanGroundVisual();
                     this.refreshMoveableBoxDirectionArrow();
                 }
             });
@@ -208,6 +227,11 @@ export class GroundObject extends Component {
         }
 
         if (type === GroundType.Sliding_Gate) {
+            setSprite('object_sliding_gate', this.sprGround, () => {
+                if (this._groundType === GroundType.Sliding_Gate) {
+                    this.refreshSlidingGateVisual();
+                }
+            });
             return;
         }
     }
@@ -266,6 +290,13 @@ export class GroundObject extends Component {
             };
         }
 
+        if (this._groundType === GroundType.Sliding_Gate) {
+            return {
+                rowEnd: this._y,
+                colEnd: this._x,
+            };
+        }
+
         return {};
     }
 
@@ -277,15 +308,20 @@ export class GroundObject extends Component {
         }
 
         if (this._groundType === GroundType.Moveable_Box) {
-            this.refreshMoveableBoxVisual();
+            this.refreshSpanGroundVisual();
             this.refreshMoveableBoxDirectionArrow();
+            return;
+        }
+
+        if (this._groundType === GroundType.Sliding_Gate) {
+            this.refreshSlidingGateVisual();
         }
     }
 
-    private refreshMoveableBoxVisual() {
+    private refreshSpanGroundVisual() {
         this.resetSpriteTransform();
 
-        if (!this.sprGround || this._groundType !== GroundType.Moveable_Box) {
+        if (!this.sprGround || (this._groundType !== GroundType.Moveable_Box && this._groundType !== GroundType.Sliding_Gate)) {
             return;
         }
 
@@ -315,6 +351,37 @@ export class GroundObject extends Component {
         const offsetX = ((spanCols - 1) * CELL_WIDTH) / CRATE_OFFSET_DIVIDE * colDirection;
         const offsetY = ((spanRows - 1) * CELL_HEIGHT) / CRATE_OFFSET_DIVIDE * rowDirection;
         spriteNode.setPosition(offsetX, offsetY, 0);
+    }
+
+    private refreshSlidingGateVisual() {
+        this.clearSlidingGateSprites();
+
+        if (!this.sprGround || this._groundType !== GroundType.Sliding_Gate) {
+            return;
+        }
+
+        const rowEnd = this._groundData?.properties?.rowEnd ?? this._y;
+        const colEnd = this._groundData?.properties?.colEnd ?? this._x;
+        const deltaRow = rowEnd - this._y;
+        const deltaCol = colEnd - this._x;
+        const cellDistance = Math.max(Math.abs(deltaRow), Math.abs(deltaCol));
+
+        if (cellDistance === 0) {
+            return;
+        }
+
+        const stepX = deltaCol / cellDistance;
+        const stepY = deltaRow / cellDistance;
+
+        for (let i = 1; i <= cellDistance; i++) {
+            const gateNode = instantiate(this.sprGround.node);
+            gateNode.name = `SlidingGateSprite_${i}`;
+            gateNode.setParent(this.node);
+            gateNode.setScale(GroundObject.ROPE_SEGMENT_SCALE, GroundObject.ROPE_SEGMENT_SCALE, 1);
+            gateNode.setPosition(stepX * GroundObject.ROPE_SEGMENT_SPACING * i, stepY * GroundObject.ROPE_SEGMENT_SPACING * i, 0);
+
+            this._slidingGateSprites.push(gateNode);
+        }
     }
 
     private refreshMoveableBoxDirectionArrow() {
@@ -429,6 +496,20 @@ export class GroundObject extends Component {
             }
         }
         this._ropeSprites = [];
+    }
+
+    private clearSlidingGateSprites() {
+        if (!Array.isArray(this._slidingGateSprites)) {
+            this._slidingGateSprites = [];
+            return;
+        }
+
+        for (const gateSprite of this._slidingGateSprites) {
+            if (gateSprite && gateSprite.isValid) {
+                gateSprite.destroy();
+            }
+        }
+        this._slidingGateSprites = [];
     }
 
     private updateIdLabel() {

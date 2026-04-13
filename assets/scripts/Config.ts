@@ -62,7 +62,7 @@ export type HoleData = {
 }
 
 export type HoleProperties = {
-
+  color?: ColorType; 
 }
 
 export type CoverProperties = {
@@ -82,8 +82,8 @@ export type GroundData = {
 export type GroundProperties = {
   count?: number; //Stone_wall
   color?: ColorType; //Color_path, Colored_Stone
-  rowEnd?: number; //Ground, Movable_box
-  colEnd?: number; //Ground, Movable_box
+  rowEnd?: number; //Ground, Movable_box, sliding_Gate
+  colEnd?: number; //Ground, Movable_box, sliding_Gate
   dir?: MoveableBoxDirection //Movable_box
 }
 
