@@ -77,6 +77,12 @@ export class GroundObject extends Component {
             return;
         }
 
+        if (groundData.type === GroundType.Colored_Stone) {
+            const color = groundData.properties?.color;
+            this.sprGround.color = color != null ? getColor(color as ColorType) : Color.WHITE.clone();
+            return;
+        }
+
         if (groundData.type === GroundType.Rope) {
             this.refreshRopeVisual();
             return;
@@ -140,6 +146,8 @@ export class GroundObject extends Component {
         }
 
         if (type === GroundType.Colored_Stone) {
+            setSprite('object_rock', this.sprGround);
+            this.sprGround.color = getColor(Global.ColorType);
             return;
         }
 
@@ -170,6 +178,13 @@ export class GroundObject extends Component {
             return;
         }
 
+        if (this._groundType === GroundType.Colored_Stone) {
+            this.sprGround.color = getColor(color);
+            const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
+            opacity.opacity = Math.round(255);
+            return;
+        }
+
         this.sprGround.color = new Color(255, 255, 255, 255);
         const opacity = this.sprGround.getComponent(UIOpacity) ?? this.sprGround.addComponent(UIOpacity);
         opacity.opacity = Math.round(255);
@@ -183,6 +198,12 @@ export class GroundObject extends Component {
         }
 
         if (this._groundType === GroundType.Color_Path) {
+            return {
+                color: Global.ColorType,
+            };
+        }
+
+        if (this._groundType === GroundType.Colored_Stone) {
             return {
                 color: Global.ColorType,
             };
@@ -238,6 +259,11 @@ export class GroundObject extends Component {
     }
 
     private clearRopeSprites() {
+        if (!Array.isArray(this._ropeSprites)) {
+            this._ropeSprites = [];
+            return;
+        }
+
         for (const ropeSprite of this._ropeSprites) {
             if (ropeSprite && ropeSprite.isValid) {
                 ropeSprite.destroy();
