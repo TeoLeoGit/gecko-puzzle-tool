@@ -90,7 +90,7 @@ export const getColorName = (color: number): string => {
     }
 }
 
-export const setSprite = (spriteName: string, applySprite: Sprite) => {
+export const setSprite = (spriteName: string, applySprite: Sprite, onLoaded?: () => void) => {
     resources.loadDir<SpriteFrame>('images/level/' + spriteName, SpriteFrame, (err, assets) => {
         if (err) {
             console.error('Failed to load sprites: ', err);
@@ -100,10 +100,10 @@ export const setSprite = (spriteName: string, applySprite: Sprite) => {
         const found = assets[0];
         if (found) {
             applySprite.spriteFrame = found;
+            onLoaded?.();
         } else {
             console.warn('Sprite not found: ', spriteName);
             return;
         }
     });
 }
-

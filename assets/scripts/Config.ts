@@ -82,6 +82,8 @@ export type GroundData = {
 export type GroundProperties = {
   count?: number; //Stone_wall
   color?: ColorType; //Color_path
+  rowEnd?: number; //Ground
+  colEnd?: number; //Ground
 }
 
 export type LevelCoverData = {

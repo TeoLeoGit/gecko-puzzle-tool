@@ -21,7 +21,6 @@ export class GeckoItemHandler {
             const spriteName = carryItem.colorLockType === ItemLockType.Silver
                 ? 'item_silver_key'
                 : 'item_gold_key';
-            log(spriteName);
             this.addItemSprite(rootNode, spriteName, carryItem.type);
             return;
         }
@@ -30,7 +29,12 @@ export class GeckoItemHandler {
             const spriteName = carryItem.colorLockType === ItemLockType.Silver
                 ? 'item_silver_lock'
                 : 'item_gold_lock';
-            log(spriteName);
+            this.addItemSprite(rootNode, spriteName, carryItem.type);
+            return;
+        }
+
+        if (carryItem.type === CarryItemType.Scissors) {
+            const spriteName = 'item_scissors';
             this.addItemSprite(rootNode, spriteName, carryItem.type);
             return;
         }
