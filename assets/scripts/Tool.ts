@@ -12,7 +12,7 @@ import { Global } from "./Global";
 import { GroundObject } from "./GroundObject";
 import { Hole } from "./Hole";
 import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
-import { CoverType, DesignMode, GeckoType, GroundType, HoleType } from "./Type";
+import { CarryItemType, CoverType, DesignMode, GeckoType, GroundType, HoleType, ItemLockType } from "./Type";
 import { getColorName } from "./Utils";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
@@ -1598,14 +1598,16 @@ export class Tool extends Component {
     }
 
     hasDesignErrorInLevel(): string {
-        //Check time
+        // Time error: the level must have a valid timer.
         if (this._editLevelData.time === 0) {
             return "Thời gian chơi không đúng!";
         }
 
-        //Check gecko - hole
+        // Gecko count error: every gecko color must have enough matching holes.
         const requiredHoleByColor: Map<number, number> = new Map();
         const availableHoleByColor: Map<number, number> = new Map();
+        const lockGeckoByType: Map<number, number> = new Map();
+        const keyGeckoByType: Map<number, number> = new Map();
 
         for (const gecko of this._editLevelData.geckos) {
             requiredHoleByColor.set(
@@ -1627,6 +1629,18 @@ export class Tool extends Component {
                     );
                 }
             }
+
+            const carryItem = gecko.properties?.carryItem;
+            if (!carryItem) {
+                continue;
+            }
+
+            const lockType = carryItem.colorLockType ?? ItemLockType.Gold;
+            if (carryItem.type === CarryItemType.Lock) {
+                lockGeckoByType.set(lockType, (lockGeckoByType.get(lockType) ?? 0) + 1);
+            } else if (carryItem.type === CarryItemType.Key) {
+                keyGeckoByType.set(lockType, (keyGeckoByType.get(lockType) ?? 0) + 1);
+            }
         }
 
         for (const hole of this._editLevelData.holes) {
@@ -1636,8 +1650,10 @@ export class Tool extends Component {
             );
         }
 
+        // Collect gecko-hole mismatch messages first.
         const missingHoleMessages: string[] = [];
         const missingGeckoMessages: string[] = [];
+        const missingKeyMessages: string[] = [];
 
         for (const [color, requiredCount] of requiredHoleByColor.entries()) {
             const availableCount = availableHoleByColor.get(color) ?? 0;
@@ -1653,13 +1669,26 @@ export class Tool extends Component {
             }
         }
 
-        if (missingHoleMessages.length > 0 || missingGeckoMessages.length > 0) {
+        // Key-lock error: every lock gecko must have an equivalent key gecko.
+        for (const [lockType, lockCount] of lockGeckoByType.entries()) {
+            const keyCount = keyGeckoByType.get(lockType) ?? 0;
+            if (keyCount < lockCount) {
+                const lockTypeName = lockType === ItemLockType.Silver ? 'Silver' : 'Gold';
+                missingKeyMessages.push(`${lockTypeName} (${lockCount - keyCount})`);
+            }
+        }
+
+        // Merge all error sections into the final message.
+        if (missingHoleMessages.length > 0 || missingGeckoMessages.length > 0 || missingKeyMessages.length > 0) {
             const messages: string[] = [];
             if (missingHoleMessages.length > 0) {
                 messages.push(`Thiếu hole cho gecko: ${missingHoleMessages.join(', ')}`);
             }
             if (missingGeckoMessages.length > 0) {
                 messages.push(`Thiếu gecko cho hole: ${missingGeckoMessages.join(', ')}`);
+            }
+            if (missingKeyMessages.length > 0) {
+                messages.push(`Missing key gecko for lock: ${missingKeyMessages.join(', ')}`);
             }
             return messages.join('\n');
         }
@@ -1709,3 +1738,7 @@ export class Tool extends Component {
         this.onReturnWithoutSave();
     }
 }
+
+
+
+
