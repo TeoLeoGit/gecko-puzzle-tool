@@ -23,7 +23,7 @@ export class Cell extends Component {
     private _isEmpty: boolean = true;
     private _isWall: boolean = false;
     private _isCovered: boolean = false;
-    private _containObject: Node = null!;
+    private _containObject: Node | null = null;
 
     protected onLoad(): void {
         EventManager.instance.on(Event.DELETE_ONE_BODY, this.onDeleteOneBody, this);
@@ -91,11 +91,16 @@ export class Cell extends Component {
     private onDeleteOneBody(deleteBody: InputDeleteGridObject) {
         if (deleteBody.rootObj === this._containObject) {
             this.IsEmpty = true;
+            this._containObject = null;
         }
     }
 
     public setContainForObject(levelObject: Node) {
         this._containObject = levelObject;
+    }
+
+    public clearContainForObject() {
+        this._containObject = null;
     }
 
     public reset() {
@@ -105,6 +110,7 @@ export class Cell extends Component {
         this._isEmpty = true;
         this._isWall = false;
         this._isCovered = false;
+        this._containObject = null;
 
         this.sprite.node.active = true;
         const oldColor = this.sprite.color;

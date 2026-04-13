@@ -137,6 +137,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
         EventManager.instance.on(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole, this);
         EventManager.instance.on(Event.UPDATE_COVERED_CELLS, this.markCoveredCells, this);
+        EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells, this);
 
         this.initGrid();
         this.init();
@@ -160,6 +161,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
         EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole);
         EventManager.instance.off(Event.UPDATE_COVERED_CELLS, this.markCoveredCells);
+        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells);
     }
 
     onMouseDown(event: EventMouse) {
@@ -616,14 +618,36 @@ export class Tool extends Component {
 
         let maxGroundId = -1;
         for (const ground of groundData) {
-            const row = ground?.r;
-            const col = ground?.c;
+            const row = ground?.r ?? -1;
+            const col = ground?.c ?? -1;
             const cell = this._grid[row]?.[col];
             const isBlockingGround = GroundObject.isBlockingType(ground?.type);
+            const rowEnd = ground?.properties?.rowEnd ?? row;
+            const colEnd = ground?.properties?.colEnd ?? col;
+            const minRow = Math.min(row, rowEnd);
+            const maxRow = Math.max(row, rowEnd);
+            const minCol = Math.min(col, colEnd);
+            const maxCol = Math.max(col, colEnd);
 
             maxGroundId = Math.max(maxGroundId, ground?.id ?? -1);
             if (!cell || !cell.node.active || cell.IsWall || this.hasGroundAt(col, row)) continue;
             if (isBlockingGround && !cell.IsEmpty) continue;
+            if (ground?.type === GroundType.Moveable_Box) {
+                let hasBlockedCell = false;
+                for (let scanRow = minRow; scanRow <= maxRow && !hasBlockedCell; scanRow++) {
+                    for (let scanCol = minCol; scanCol <= maxCol; scanCol++) {
+                        const scanCell = this._grid[scanRow]?.[scanCol];
+                        if (!scanCell || !scanCell.node.active || scanCell.IsWall || !scanCell.IsEmpty) {
+                            hasBlockedCell = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (hasBlockedCell) {
+                    continue;
+                }
+            }
             
             const groundNode = instantiate(this.groundPrefab);
             this.groundParent.addChild(groundNode);
@@ -633,8 +657,7 @@ export class Tool extends Component {
             groundComponent.applyGroundData(ground);
 
             if (isBlockingGround) {
-                cell.IsEmpty = false;
-                cell.setContainForObject(groundNode);
+                this.markGroundOccupiedCells(groundComponent, true);
             }
         }
 
@@ -978,6 +1001,7 @@ export class Tool extends Component {
             const groundData = groundComponent.createGroundData();
             groundComponent.applyGroundData(groundData);
             this.addGroundData(groundData);
+            this.markGroundOccupiedCells(groundComponent, true);
             groundComponent.showPropertiesPopup(groundData);
         } else {
             newGround.destroy();
@@ -1212,8 +1236,8 @@ export class Tool extends Component {
                 return false;
             }
 
-            const rootPos = groundComp.RootPos;
-            return rootPos.x === x && rootPos.y === y;
+            const bounds = groundComp.OccupiedBounds;
+            return x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
         });
     }
 
@@ -1289,7 +1313,7 @@ export class Tool extends Component {
 
     canCreateGroundAt(root: Node, groundType: GroundType, groundNode: Node): boolean {
         const rootCell = root.getComponent(Cell);
-        if (!rootCell || rootCell.IsWall || this.hasGroundAt(rootCell.X, rootCell.Y)) {
+        if (!rootCell || rootCell.IsWall || !rootCell.IsEmpty || this.hasGroundAt(rootCell.X, rootCell.Y)) {
             return false;
         }
 
@@ -1298,6 +1322,94 @@ export class Tool extends Component {
         }
 
         return this.fillEmptyCell(root, groundNode);
+    }
+
+    private markGroundOccupiedCells(groundComp: GroundObject | null, occupied: boolean) {
+        if (!groundComp) {
+            return;
+        }
+
+        const bounds = groundComp.OccupiedBounds;
+        const groundNode = groundComp.node;
+        for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+            for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+                const cell = this._grid[row]?.[col];
+                if (!cell || !cell.node.active || cell.IsWall) {
+                    continue;
+                }
+
+                if (occupied) {
+                    cell.IsEmpty = false;
+                    cell.setContainForObject(groundNode);
+                } else {
+                    cell.IsEmpty = true;
+                    cell.clearContainForObject();
+                }
+            }
+        }
+    }
+
+    private rebuildOccupiedCells() {
+        for (const row of this._grid) {
+            for (const cell of row) {
+                if (!cell) {
+                    continue;
+                }
+
+                cell.clearContainForObject();
+                if (cell.IsWall) {
+                    cell.IsEmpty = false;
+                    continue;
+                }
+
+                cell.IsEmpty = true;
+            }
+        }
+
+        for (const geckoNode of this.geckoParent.children) {
+            const geckoComp = geckoNode.getComponent(GeckoBody);
+            if (!geckoComp) {
+                continue;
+            }
+
+            const pos = geckoComp.RootPos;
+            const cell = this._grid[pos.y]?.[pos.x];
+            if (!cell || !cell.node.active || cell.IsWall) {
+                continue;
+            }
+
+            cell.IsEmpty = false;
+            cell.setContainForObject(geckoNode);
+        }
+
+        for (const holeNode of this.holeParent.children) {
+            const holeComp = holeNode.getComponent(Hole);
+            if (!holeComp) {
+                continue;
+            }
+
+            const pos = holeComp.RootPos;
+            const cell = this._grid[pos.y]?.[pos.x];
+            if (!cell || !cell.node.active || cell.IsWall) {
+                continue;
+            }
+
+            cell.IsEmpty = false;
+            cell.setContainForObject(holeNode);
+        }
+
+        for (const groundNode of this.groundParent.children) {
+            const groundComp = groundNode.getComponent(GroundObject);
+            if (!groundComp) {
+                continue;
+            }
+
+            if (!GroundObject.isBlockingType(groundComp.GroundType)) {
+                continue;
+            }
+
+            this.markGroundOccupiedCells(groundComp, true);
+        }
     }
 
     isConnectedBodyPart(x: number, y: number): boolean {

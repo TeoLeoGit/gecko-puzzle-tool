@@ -1,6 +1,6 @@
 
 import { Node } from "cc";
-import { CarryItemType, ColorType, CoverType, GeckoType, GroundType, HoleType, ItemLockType } from "./Type";
+import { CarryItemType, ColorType, CoverType, GeckoType, GroundType, HoleType, ItemLockType, MoveableBoxDirection } from "./Type";
 import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 
@@ -82,8 +82,9 @@ export type GroundData = {
 export type GroundProperties = {
   count?: number; //Stone_wall
   color?: ColorType; //Color_path, Colored_Stone
-  rowEnd?: number; //Ground
-  colEnd?: number; //Ground
+  rowEnd?: number; //Ground, Movable_box
+  colEnd?: number; //Ground, Movable_box
+  dir?: MoveableBoxDirection //Movable_box
 }
 
 export type LevelCoverData = {
