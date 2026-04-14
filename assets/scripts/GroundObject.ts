@@ -1,4 +1,4 @@
-import { _decorator, Button, Color, Component, instantiate, Label, LabelOutline, Node, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
+import { _decorator, Color, Component, instantiate, Label, LabelOutline, Node, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
 import { GroundData, GroundProperties, InputGroundPopup } from './Config';
 import { Event } from './Constant';
 import EventManager from './EventManager';
@@ -321,10 +321,8 @@ export class GroundObject extends Component {
     private refreshSpanGroundVisual() {
         this.resetSpriteTransform();
 
-        if (!this.sprGround || (this._groundType !== GroundType.Moveable_Box && this._groundType !== GroundType.Sliding_Gate)) {
-            return;
-        }
-
+        if (this._groundType !== GroundType.Moveable_Box && this._groundType !== GroundType.Sliding_Gate) return;
+        
         const spriteNode = this.sprGround.node;
         const spriteTransform = spriteNode.getComponent(UITransform);
         if (!spriteTransform) {
@@ -385,47 +383,52 @@ export class GroundObject extends Component {
     }
 
     private refreshMoveableBoxDirectionArrow() {
-        if (!this.sprGround || this._groundType !== GroundType.Moveable_Box) {
+        if (this._groundType !== GroundType.Moveable_Box) {
             this.clearDirectionArrow();
             return;
         }
 
         const direction = this._groundData?.properties?.dir ?? MoveableBoxDirection.Both;
         this.clearDirectionArrow();
+        this.scheduleOnce(() => {
+            if (this._groundType !== GroundType.Moveable_Box) return;
 
-        const arrowConfigs = direction === MoveableBoxDirection.Both
-            ? [
-                { name: 'MoveableBoxDirectionArrow_V', rotation: 0, positionY: 12 },
-                { name: 'MoveableBoxDirectionArrow_H', rotation: 90, positionY: -12 },
-            ]
-            : [
-                {
-                    name: 'MoveableBoxDirectionArrow',
-                    rotation: direction === MoveableBoxDirection.Horizontal ? 90 : 0,
-                    positionY: 0,
-                },
-            ];
+            const arrowConfigs = direction === MoveableBoxDirection.Both
+                ? [
+                    { name: 'MoveableBoxDirectionArrow_V', rotation: 0, positionY: 12 },
+                    { name: 'MoveableBoxDirectionArrow_H', rotation: 90, positionY: -12 },
+                ]
+                : [
+                    {
+                        name: 'MoveableBoxDirectionArrow',
+                        rotation: direction === MoveableBoxDirection.Horizontal ? 90 : 0,
+                        positionY: 0,
+                    },
+                ];
 
-        for (const config of arrowConfigs) {
-            const arrowNode = new Node(config.name);
-            arrowNode.addComponent(UITransform);
-            arrowNode.setParent(this.node);
-            arrowNode.setScale(0.5, 0.5, 1);
-            arrowNode.setPosition(0, config.positionY, 0);
-
-            const arrowSprite = arrowNode.getComponent(Sprite) ?? arrowNode.addComponent(Sprite);
-            setSprite('arrow_dir', arrowSprite, () => {
-                if (!arrowNode || !arrowNode.isValid || this._groundType !== GroundType.Moveable_Box) {
+            for (const config of arrowConfigs) {
+                if (!this.sprGround || !this.sprGround.node || !this.sprGround.node.isValid) {
                     return;
                 }
 
-                arrowNode.setScale(0.5, 0.5, 1);
+                const arrowNode = new Node(config.name);
+                arrowNode.addComponent(UITransform);
+                arrowNode.setParent(this.sprGround.node);
                 arrowNode.setPosition(0, config.positionY, 0);
-                arrowNode.setRotationFromEuler(0, 0, config.rotation);
-            });
 
-            this._dirArrowNodes.push(arrowNode);
-        }
+                const arrowSprite = arrowNode.addComponent(Sprite);
+                setSprite('arrow_dir', arrowSprite, () => {
+                    if (!arrowNode || !arrowNode.isValid || this._groundType !== GroundType.Moveable_Box) {
+                        return;
+                    }
+
+                    arrowNode.setPosition(0, config.positionY, 0);
+                    arrowNode.setRotationFromEuler(0, 0, config.rotation);
+                });
+
+                this._dirArrowNodes.push(arrowNode);
+            }
+        }, 0);
     }
 
     private clearDirectionArrow() {
