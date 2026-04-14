@@ -71,6 +71,14 @@ export class PopupSpecialGecko extends Component {
             EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
             return;
         }
+
+        if (geckoType === GeckoType.StraightGecko) {
+            this._input.dataSpecialGecko ??= {};
+            this._input.geckoData.properties.specialGecko = this._input.dataSpecialGecko;
+            SpecialGeckoHandler.addSpecialGecko(this._input);
+            this.updateViewProperties();
+            return;
+        }
     }
 
     onChooseGeckoWithItem(_event: CocosEvent, customEventData?: string) {

@@ -37,6 +37,10 @@ export class SpecialGeckoHandler {
                 input.geckoParts[bodyIndex].setColor(ColorType.Hidden);
             }
         }
+
+        if (geckoTypes.findIndex(type => type === GeckoType.StraightGecko) !== -1) {
+            this.addStraightGeckoArrow(input);
+        }
     }
 
     public static removeSpecialGecko(input: InputSpecialGeckoPopup) {
@@ -48,6 +52,15 @@ export class SpecialGeckoHandler {
                 }
             }
             geckoBody.setColor(input.geckoData.color);
+        }
+
+        const headNode = input.geckoParts?.[0]?.node;
+        if (headNode) {
+            for (const child of [...headNode.children]) {
+                if (child.name.startsWith('StraightGeckoArrow_')) {
+                    child.destroy();
+                }
+            }
         }
     }
 
@@ -65,5 +78,24 @@ export class SpecialGeckoHandler {
         }
 
         return types;
+    }
+
+    private static addStraightGeckoArrow(input: InputSpecialGeckoPopup) {
+        const tailNode = input.geckoParts?.[input.geckoParts.length - 1]?.node;
+
+        for (const child of [...tailNode.children]) {
+            if (child.name.startsWith('StraightGeckoArrow_')) {
+                child.destroy();
+            }
+        }
+
+        const arrowNode = new Node('StraightGeckoArrow_0');
+        arrowNode.setPosition(0, 100, 0);
+        arrowNode.setScale(0.5, 3, 1);
+
+        const sprite = arrowNode.addComponent(Sprite);
+        setSprite('arrow_dir', sprite);
+
+        tailNode.addChild(arrowNode);
     }
 }
