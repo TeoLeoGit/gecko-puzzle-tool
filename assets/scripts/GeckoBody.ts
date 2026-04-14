@@ -37,6 +37,18 @@ export class GeckoBody extends Component {
         this.sprGeckoBody.color = getColor(color);
     }
 
+    setBody(color: ColorType) {
+        setSprite("body", this.sprGeckoBody);
+        this.sprGeckoBody.color = getColor(color);
+        this.nodeArrow.active = true;
+        this.sprGeckoBody.node.angle = 0;
+
+        const labelNode = this.node.getChildByName('Label_gecko_id');
+        if (labelNode) {
+            labelNode.destroy();
+        }
+    }
+
     removeBtn() {
         this.btnOpenSpecialGecko.destroy();
     }

@@ -149,6 +149,7 @@ export class Tool extends Component {
         EventManager.instance.on(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
         EventManager.instance.on(Event.EDIT_LEVEL, this.loadLevel, this);
         EventManager.instance.on(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
+        EventManager.instance.on(Event.FLIP_CONNECTED_GECKO_REVERSE, this.onFlipConnectedGeckoReverse, this);
         EventManager.instance.on(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole, this);
         EventManager.instance.on(Event.UPDATE_COVERED_CELLS, this.markCoveredCells, this);
         EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells, this);
@@ -173,6 +174,7 @@ export class Tool extends Component {
         EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
         EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
         EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
+        EventManager.instance.off(Event.FLIP_CONNECTED_GECKO_REVERSE, this.onFlipConnectedGeckoReverse);
         EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole);
         EventManager.instance.off(Event.UPDATE_COVERED_CELLS, this.markCoveredCells);
         EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells);
@@ -582,6 +584,7 @@ export class Tool extends Component {
                     continue;
                 }
 
+                this.applyConnectedMemberOrientation(member, memberParts);
                 this.applySpecialGeckoToParts(member, memberParts);
             }
             return;
@@ -1658,6 +1661,48 @@ export class Tool extends Component {
         EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
     }
 
+    onFlipConnectedGeckoReverse(input: InputSpecialGeckoPopup) {
+        if (!input?.geckoData || input.geckoData.type !== GeckoType.Connected || !input.geckoParts?.length) {
+            return;
+        }
+
+        input.geckoData.reversed = !input.geckoData.reversed;
+        const memberParts = input.geckoParts;
+        const reversed = input.geckoData.reversed === true;
+
+        if (reversed) {
+            for (let i = 0; i < memberParts.length - 1; i++) {
+                memberParts[i].setBody(input.geckoData.color);
+            }
+
+            const headBody = memberParts[memberParts.length - 1];
+            headBody.setHead(input.geckoData.color);
+            if (memberParts.length > 1) {
+                headBody.setHeadLookDirection(memberParts[memberParts.length - 2].RootPos);
+            }
+
+            for (let i = memberParts.length - 2; i >= 0; i--) {
+                memberParts[i].setDirection(memberParts[i + 1].RootPos);
+            }
+        } else {
+            for (let i = 1; i < memberParts.length; i++) {
+                memberParts[i].setBody(input.geckoData.color);
+            }
+
+            const headBody = memberParts[0];
+            headBody.setHead(input.geckoData.color);
+            if (memberParts.length > 1) {
+                headBody.setHeadLookDirection(memberParts[1].RootPos);
+            }
+
+            for (let i = 1; i < memberParts.length; i++) {
+                memberParts[i].setDirection(memberParts[i - 1].RootPos);
+            }
+        }
+
+        EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
+    }
+
     onShowPopupSpecialHole(holeId: number) {
         const holeData = this._editLevelData.holes.find((hole) => hole.id === holeId);
         if (!holeData) {
@@ -1971,7 +2016,7 @@ export class Tool extends Component {
     private createConnectedChainMember(id: number, color: ColorType, length: number): ConnectedChainMemberData {
         return {
             id,
-            type: GeckoType.Normal,
+            type: GeckoType.Connected,
             color,
             length,
             reversed: false,
@@ -2037,6 +2082,46 @@ export class Tool extends Component {
         CoverHandler.addCoverForGecko(input);
     }
 
+    private applyConnectedMemberOrientation(member: ConnectedChainMemberData, memberParts: GeckoBody[]) {
+        if (memberParts.length === 0) {
+            return;
+        }
+
+        const color = member.color;
+        const isReversed = member.reversed === true;
+
+        if (isReversed) {
+            for (let i = 0; i < memberParts.length - 1; i++) {
+                memberParts[i].setBody(color);
+            }
+
+            const headBody = memberParts[memberParts.length - 1];
+            headBody.setHead(color);
+            if (memberParts.length > 1) {
+                headBody.setHeadLookDirection(memberParts[memberParts.length - 2].RootPos);
+            }
+
+            for (let i = memberParts.length - 2; i >= 0; i--) {
+                memberParts[i].setDirection(memberParts[i + 1].RootPos);
+            }
+            return;
+        }
+
+        for (let i = 1; i < memberParts.length; i++) {
+            memberParts[i].setBody(color);
+        }
+
+        const headBody = memberParts[0];
+        headBody.setHead(color);
+        if (memberParts.length > 1) {
+            headBody.setHeadLookDirection(memberParts[1].RootPos);
+        }
+
+        for (let i = 1; i < memberParts.length; i++) {
+            memberParts[i].setDirection(memberParts[i - 1].RootPos);
+        }
+    }
+
     private normalizeConnectedMembers(geckoData: GeckoData) {
         const connectedMembers = geckoData.properties?.specialGecko?.connectedMembers;
         if (!connectedMembers || connectedMembers.length === 0) {
@@ -2097,6 +2182,3 @@ export class Tool extends Component {
         this.onReturnWithoutSave();
     }
 }
-
-
-

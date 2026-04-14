@@ -45,6 +45,7 @@ export type GeckoData = {
   id: number;
   type: GeckoType;
   color: ColorType;
+  reversed?: boolean;
   properties?: GeckoProperties;
   parts?: GeckoPart[];
   Cover?: CoverData[];

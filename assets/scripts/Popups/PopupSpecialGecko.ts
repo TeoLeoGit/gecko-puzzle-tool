@@ -16,6 +16,9 @@ export class PopupSpecialGecko extends Component {
     @property(Node)
     btnContainer: Node = null!;
 
+    @property(Node)
+    btnReverseConnectedGecko: Node = null!;
+
     private _input: InputSpecialGeckoPopup;
     protected onLoad(): void {
         EventManager.instance.on(Event.SHOW_SPECIAL_GECKO_POPUP, this.onShow, this);
@@ -32,11 +35,23 @@ export class PopupSpecialGecko extends Component {
         this.node.active = true;
         this._input = input;
         this.updateViewProperties();
+        if (this.isConnectedGecko()) this.btnReverseConnectedGecko.active = true;
+        else this.btnReverseConnectedGecko.active = false;
     }
 
     onClickClose() {
         GeckoItemHandler.addGeckoItem(this._input);
         this.node.active = false;
+    }
+
+    onClickFlipConnectedReverse() {
+        if (!this.isConnectedGecko()) {
+            return;
+        }
+        this.btnReverseConnectedGecko.getChildByName('Check').active = !this.btnReverseConnectedGecko.getChildByName('Check').active;
+
+        EventManager.instance.emit(Event.FLIP_CONNECTED_GECKO_REVERSE, this._input);
+        EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
     }
 
     onChooseSpecialGecko(_event: CocosEvent, customEventData?: string) {
@@ -188,6 +203,15 @@ export class PopupSpecialGecko extends Component {
             const label = previewNode.addComponent(Label);
             label.string = JSON.stringify({
                 [propertyName]: dataCarryItem[propertyName],
+            });
+            this.dataPreview.addChild(previewNode);
+        }
+
+        if (this.isConnectedGecko()) {
+            const previewNode = new Node('Preview_reversed');
+            const label = previewNode.addComponent(Label);
+            label.string = JSON.stringify({
+                reversed: this._input.geckoData.reversed ?? false,
             });
             this.dataPreview.addChild(previewNode);
         }
@@ -349,6 +373,11 @@ export class PopupSpecialGecko extends Component {
 
         CoverHandler.removeCoverForGecko(this._input, coverType);
         this.updateViewProperties();
+    }
+
+    private isConnectedGecko(): boolean {
+        return this._input?.geckoData?.type === GeckoType.Connected
+            && typeof (this._input.geckoData as { reversed?: unknown }).reversed === 'boolean';
     }
 
     private ensureGeckoProperties() {
