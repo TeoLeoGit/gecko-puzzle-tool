@@ -62,7 +62,11 @@ export type HoleData = {
 }
 
 export type HoleProperties = {
-  color?: ColorType; 
+  colors?: ColorType[];
+}
+
+export type SpecialHoleData = {
+  colors?: ColorType[];
 }
 
 export type CoverProperties = {
@@ -128,6 +132,7 @@ export type InputSpecialHolePopup = {
   holeData: HoleData;
   holeComp: Hole;
   specialType: HoleType;
+  dataSpecialHole?: SpecialHoleData;
   dataCover?: CoverData;
 }
 

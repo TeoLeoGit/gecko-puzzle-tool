@@ -12,8 +12,9 @@ import { Global } from "./Global";
 import { GroundObject } from "./GroundObject";
 import { Hole } from "./Hole";
 import { SpecialGeckoHandler } from "./SpecialGeckoHandler";
-import { CarryItemType, CoverType, DesignMode, GeckoType, GroundType, HoleType, ItemLockType } from "./Type";
+import { CarryItemType, ColorType, CoverType, DesignMode, GeckoType, GroundType, HoleType, ItemLockType } from "./Type";
 import { getColorName } from "./Utils";
+import { SpecialHoleHandler } from "./SpecialHoleHandler";
 const { ccclass, property } = _decorator;
 @ccclass('Tool')
 export class Tool extends Component {
@@ -703,9 +704,11 @@ export class Tool extends Component {
             holeData,
             holeComp,
             specialType: holeData.type,
+            dataSpecialHole: holeData.properties,
             dataCover: holeData.covers,
         };
 
+        SpecialHoleHandler.addSpecialHole(input);
         CoverHandler.addCoverHole(input);
     }
 
@@ -1597,6 +1600,7 @@ export class Tool extends Component {
             holeData,
             holeComp,
             specialType: holeData.type,
+            dataSpecialHole: holeData.properties,
             dataCover: holeData.covers,
         };
 
@@ -1722,24 +1726,11 @@ export class Tool extends Component {
         const keyGeckoByType: Map<number, number> = new Map();
 
         for (const gecko of this._editLevelData.geckos) {
-            requiredHoleByColor.set(
-                gecko.color,
-                (requiredHoleByColor.get(gecko.color) ?? 0) + 1,
-            );
-
-            const allSpecialTypes = [
-                gecko.type,
-                ...(gecko.properties?.extraGeckoTypes ?? []),
-            ];
-
-            if (allSpecialTypes.findIndex(type => type === GeckoType.Stacked) !== -1) {
-                const stackColors = gecko.properties?.specialGecko?.stackColors ?? [];
-                for (const stackColor of stackColors) {
-                    requiredHoleByColor.set(
-                        stackColor,
-                        (requiredHoleByColor.get(stackColor) ?? 0) + 1,
-                    );
-                }
+            for (const color of this.getGeckoValidationColors(gecko)) {
+                requiredHoleByColor.set(
+                    color,
+                    (requiredHoleByColor.get(color) ?? 0) + 1,
+                );
             }
 
             const carryItem = gecko.properties?.carryItem;
@@ -1756,10 +1747,12 @@ export class Tool extends Component {
         }
 
         for (const hole of this._editLevelData.holes) {
-            availableHoleByColor.set(
-                hole.color,
-                (availableHoleByColor.get(hole.color) ?? 0) + 1,
-            );
+            for (const color of this.getHoleValidationColors(hole)) {
+                availableHoleByColor.set(
+                    color,
+                    (availableHoleByColor.get(color) ?? 0) + 1,
+                );
+            }
         }
 
         // Collect gecko-hole mismatch messages first.
@@ -1800,12 +1793,34 @@ export class Tool extends Component {
                 messages.push(`Thiếu gecko cho hole: ${missingGeckoMessages.join(', ')}`);
             }
             if (missingKeyMessages.length > 0) {
-                messages.push(`Missing key gecko for lock: ${missingKeyMessages.join(', ')}`);
+                messages.push(`Thiếu key gecko cho lock: ${missingKeyMessages.join(', ')}`);
             }
             return messages.join('\n');
         }
 
         return '';
+    }
+
+    private getGeckoValidationColors(gecko: GeckoData): ColorType[] {
+        const colors: ColorType[] = [gecko.color];
+        const extraTypes = gecko.properties?.extraGeckoTypes ?? [];
+        const isStacked = gecko.type === GeckoType.Stacked || (extraTypes.findIndex(type => type === GeckoType.Stacked) > -1);
+
+        if (isStacked) {
+            colors.push(...(gecko.properties?.specialGecko?.stackColors ?? []));
+        }
+
+        return [...new Set(colors)];
+    }
+
+    private getHoleValidationColors(hole: HoleData): ColorType[] {
+        const colors: ColorType[] = [hole.color];
+
+        if (hole.type === HoleType.Multi_Hole) {
+            colors.push(...(hole.properties?.colors ?? []));
+        }
+
+        return [...new Set(colors)];
     }
 
     saveData() {
