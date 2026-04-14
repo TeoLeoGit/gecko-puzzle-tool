@@ -1,6 +1,6 @@
 import { _decorator, Camera, Component, EditBox, EventKeyboard, EventMouse, Input, input, instantiate, KeyCode, Label, Layout, log, Node, Prefab, Toggle, UITransform, Vec3 } from "cc";
 import { Cell } from "./Cell";
-import { Config, GeckoData, GeckoPart, GroundData, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, LevelCoverData, LevelData } from "./Config";
+import { Config, ConnectedChainMemberData, GeckoData, GeckoPart, GroundData, HoleData, InputSpecialGeckoPopup, InputSpecialHolePopup, LevelCoverData, LevelData } from "./Config";
 import { Event } from './Constant';
 import { CoverHandler } from "./CoverHandler";
 import { CoverObject } from "./CoverObject";
@@ -16,6 +16,15 @@ import { CarryItemType, ColorType, CoverType, DesignMode, GeckoType, GroundType,
 import { getColorName } from "./Utils";
 import { SpecialHoleHandler } from "./SpecialHoleHandler";
 const { ccclass, property } = _decorator;
+
+type GeckoSpecialSelection = number | {
+    geckoId: number;
+    bodyPos?: {
+        x: number;
+        y: number;
+    };
+};
+
 @ccclass('Tool')
 export class Tool extends Component {
     @property(Camera)
@@ -60,6 +69,9 @@ export class Tool extends Component {
     @property(Node)
     btnDesginSpecialType: Node = null!;
 
+    @property(Node)
+    btnConnectedGecko: Node = null!;
+
     @property(Prefab)
     cellPrefab: Prefab = null!;
 
@@ -91,8 +103,8 @@ export class Tool extends Component {
     toggleDiff: Toggle[] = [];
     
     private _draggedGeckoBody: Node | null = null;
-    private _draggedGround: Node | null = null;
-    private _draggedCover: Node | null = null;
+    private _draggedGround:    Node | null = null;
+    private _draggedCover:     Node | null = null;
     private _draggedHole:      Node | null = null;
     private _mousePos: Vec3 = new Vec3();
     private _mouseDown: boolean = false;
@@ -100,13 +112,14 @@ export class Tool extends Component {
     private _rootCell: Node = null;
     private _gridChilds: Node[] = [];
     private _levelNumb: number = 0;
-    private _idGeckoIncrement: number = 0;
+    private _idGeckoIncrement:  number = 0;
     private _idGroundIncrement: number = 0;
-    private _idCoverIncrement: number = 0;
-    private _idHoleIncrement:  number = 0;
+    private _idCoverIncrement:  number = 0;
+    private _idHoleIncrement:   number = 0;
     private _sectionBodies: GeckoBody[] = [];
     private _currentGeckoData: GeckoData;
     private _mapGeckoIdAndParts: Map<number, GeckoBody[]> = new Map();
+    private _isCreateConnectedGecko: boolean = false;
 
     private _editLevelData: LevelData = {
         level: 1,
@@ -540,14 +553,7 @@ export class Tool extends Component {
                 prevBody = bodyComponent;
             }
 
-            if (
-                gecko.type !== GeckoType.Normal
-                || (gecko.properties?.extraGeckoTypes?.length ?? 0) > 0
-                || gecko.properties?.carryItem
-                || gecko.Cover?.length
-            ) {
-                this.loadSpecialGecko(gecko);
-            }
+            this.loadSpecialGecko(gecko);
         }
 
         this._idGeckoIncrement = maxGeckoId + 1;
@@ -559,17 +565,29 @@ export class Tool extends Component {
             return;
         }
 
-        const input: InputSpecialGeckoPopup = {
-            geckoData,
-            geckoParts,
-            specialType: geckoData.type,
-            dataSpecialGecko: geckoData.properties?.specialGecko ?? {},
-            dataCarryItem: geckoData.properties?.carryItem,
-        };
+        const connectedMembers = geckoData.properties?.specialGecko?.connectedMembers ?? [];
+        if (geckoData.type === GeckoType.Connected && connectedMembers.length > 0) {
+            let partIndex = 0;
+            for (let memberIndex = 0; memberIndex < connectedMembers.length; memberIndex++) {
+                const member = connectedMembers[memberIndex];
+                const memberLength = this.getConnectedMemberBodyCount(member, memberIndex === connectedMembers.length - 1);
+                const isLastMember = memberIndex === connectedMembers.length - 1;
+                const endIndex = isLastMember
+                    ? geckoParts.length
+                    : Math.min(geckoParts.length, partIndex + memberLength);
+                const memberParts = geckoParts.slice(partIndex, endIndex);
+                partIndex = endIndex;
 
-        SpecialGeckoHandler.addSpecialGecko(input);
-        GeckoItemHandler.addGeckoItem(input);
-        CoverHandler.addCoverForGecko(input);
+                if (memberParts.length === 0) {
+                    continue;
+                }
+
+                this.applySpecialGeckoToParts(member, memberParts);
+            }
+            return;
+        }
+
+        this.applySpecialGeckoToParts(geckoData, geckoParts);
     }
 
     loadHoles(holeData: HoleData[]) {
@@ -749,6 +767,10 @@ export class Tool extends Component {
         }
         if (this._draggedGround) {
             this._draggedGround.getComponent(GroundObject).setColor(Global.ColorType);
+        }
+
+        if (this._isCreateConnectedGecko) {
+            this.updateConnectedGeckoChainOnColorChange();
         }
     }
 
@@ -1098,6 +1120,17 @@ export class Tool extends Component {
             geckoData.parts = geckoData.parts.filter((part) => !(part.c === targetCell.X && part.r === targetCell.Y));
         }
 
+        if (geckoData?.type === GeckoType.Connected) {
+            const connectedMembers = geckoData.properties?.specialGecko?.connectedMembers;
+            if (connectedMembers?.length) {
+                const lastMember = connectedMembers[connectedMembers.length - 1];
+                lastMember.length = Math.max(0, (lastMember.length ?? 0) - 1);
+                if (lastMember.length === 0) {
+                    connectedMembers.pop();
+                }
+            }
+        }
+
         if (geckoParts.length === 0 || !geckoData?.parts?.length) {
             this._mapGeckoIdAndParts.delete(targetGeckoId);
             this._editLevelData.geckos = this._editLevelData.geckos.filter((gecko) => gecko.id !== targetGeckoId);
@@ -1125,6 +1158,16 @@ export class Tool extends Component {
                     (part) => !(part.c === targetCell.X && part.r === targetCell.Y),
                 );
                 this._sectionBodies = this._sectionBodies.filter((bodyPart) => bodyPart !== targetBody);
+                if (this._currentGeckoData.type === GeckoType.Connected) {
+                    const connectedMembers = this._currentGeckoData.properties?.specialGecko?.connectedMembers;
+                    if (connectedMembers?.length) {
+                        const lastMember = connectedMembers[connectedMembers.length - 1];
+                        lastMember.length = Math.max(0, (lastMember.length ?? 0) - 1);
+                        if (lastMember.length === 0) {
+                            connectedMembers.pop();
+                        }
+                    }
+                }
             }
         }
     }
@@ -1552,13 +1595,49 @@ export class Tool extends Component {
         for (const holeNode of this.holeParent.children) {
             holeNode.getComponent(Hole)?.enableBtn();
         }
-
     }
 
-    onShowPopupSpecialGecko(geckoId: number) {
+    onCreateConnectedGecko() {
+        this._isCreateConnectedGecko = true;
+        this.btnConnectedGecko.getChildByName("Sprite_check").active = true;
+    }
+
+    onShowPopupSpecialGecko(selection: GeckoSpecialSelection) {
+        const geckoId = typeof selection === 'number' ? selection : selection.geckoId;
+        const bodyPos = typeof selection === 'number' ? null : selection.bodyPos ?? null;
         const geckoData = this._editLevelData.geckos.find((gecko) => gecko.id === geckoId);
         if (!geckoData) {
             return;
+        }
+
+        const geckoParts = this._mapGeckoIdAndParts.get(geckoId) ?? [];
+        if (geckoParts.length === 0) {
+            return;
+        }
+
+        const connectedMembers = geckoData.properties?.specialGecko?.connectedMembers ?? [];
+        if (bodyPos && connectedMembers.length > 0) {
+            const selectedIndex = geckoParts.findIndex((bodyPart) => {
+                const rootPos = bodyPart.RootPos;
+                return rootPos.x === bodyPos.x && rootPos.y === bodyPos.y;
+            });
+
+            const memberContext = this.getConnectedMemberContext(geckoParts, connectedMembers, selectedIndex);
+            if (memberContext) {
+                memberContext.member.properties ??= {};
+                memberContext.member.properties.specialGecko ??= {};
+                const input: InputSpecialGeckoPopup = {
+                    geckoData: memberContext.member,
+                    geckoParts: memberContext.geckoParts,
+                    specialType: memberContext.member.type,
+                    dataSpecialGecko: memberContext.member.properties.specialGecko,
+                    dataCarryItem: memberContext.member.properties.carryItem,
+                    dataCover: memberContext.member.Cover?.[0],
+                };
+
+                EventManager.instance.emit(Event.SHOW_SPECIAL_GECKO_POPUP, input);
+                return;
+            }
         }
 
         if (!geckoData.properties) {
@@ -1570,7 +1649,7 @@ export class Tool extends Component {
 
         const input: InputSpecialGeckoPopup = {
             geckoData,
-            geckoParts: this._mapGeckoIdAndParts.get(geckoId),
+            geckoParts,
             specialType: geckoData.type,
             dataSpecialGecko: geckoData.properties.specialGecko,
             dataCarryItem: geckoData.properties.carryItem,
@@ -1616,10 +1695,12 @@ export class Tool extends Component {
         this.btnDesginGecko.getChildByName("Sprite_check").active = false;
         this.btnDesginWall.getChildByName("Sprite_check").active = false;
         this.btnDesginSpecialType.getChildByName("Sprite_check").active = false;
+        this.btnConnectedGecko.getChildByName("Sprite_check").active = false;
         this.btnDeleteGecko.getChildByName("Sprite_check").active = false;
         this.btnDeleteHole.getChildByName("Sprite_check").active = false;
 
         Global.DesignMode = DesignMode.None;
+        this._isCreateConnectedGecko = false;
 
         for (const geckoParts of this._mapGeckoIdAndParts.values()) {
             for (const bodyPart of geckoParts) {
@@ -1660,12 +1741,24 @@ export class Tool extends Component {
         if (this._sectionBodies.length === 1) {
             this._currentGeckoData = {
                 id: this._idGeckoIncrement,
-                type: GeckoType.Normal,
+                type: this._isCreateConnectedGecko ? GeckoType.Connected : GeckoType.Normal,
                 color: Global.ColorType,
                 parts: [part],
             };
+
+            if (this._isCreateConnectedGecko) {
+                this._currentGeckoData.properties = {
+                    specialGecko: {
+                        connectedMembers: [this.createConnectedChainMember(this._idGeckoIncrement, Global.ColorType, 1)],
+                    },
+                };
+            }
         } else {
             this._currentGeckoData.parts!.push(part);
+
+            if (this._isCreateConnectedGecko) {
+                this.incrementCurrentConnectedMemberLength();
+            }
         }
     }
 
@@ -1680,18 +1773,18 @@ export class Tool extends Component {
             return;
         }
 
+        this.normalizeConnectedMembers(this._currentGeckoData);
+
         const data: GeckoData = {
             ...this._currentGeckoData,
             parts: [...(this._currentGeckoData.parts ?? [])],
         };
-        log('geko')
         const idx = this._editLevelData.geckos.findIndex((g) => g.id === data.id);
         if (idx !== -1) {
             this._editLevelData.geckos[idx] = data;
         } else {
             this._editLevelData.geckos.push(data);
             this._idGeckoIncrement++;
-            log('new gecko!');
         }
         this._sectionBodies = [];
     }
@@ -1802,6 +1895,19 @@ export class Tool extends Component {
     }
 
     private getGeckoValidationColors(gecko: GeckoData): ColorType[] {
+        const connectedMembers = gecko.properties?.specialGecko?.connectedMembers ?? [];
+        if ((gecko.type === GeckoType.Connected || connectedMembers.length > 0) && connectedMembers.length > 0) {
+            const colors: ColorType[] = [];
+            for (const member of connectedMembers) {
+                if ((member.length ?? 0) <= 0) {
+                    continue;
+                }
+                colors.push(...this.getGeckoValidationColors(member));
+            }
+
+            return [...new Set(colors)];
+        }
+
         const colors: ColorType[] = [gecko.color];
         const extraTypes = gecko.properties?.extraGeckoTypes ?? [];
         const isStacked = gecko.type === GeckoType.Stacked || (extraTypes.findIndex(type => type === GeckoType.Stacked) > -1);
@@ -1821,6 +1927,133 @@ export class Tool extends Component {
         }
 
         return [...new Set(colors)];
+    }
+
+    private updateConnectedGeckoChainOnColorChange() {
+        if (!this._currentGeckoData || this._sectionBodies.length === 0) {
+            return;
+        }
+
+        this._currentGeckoData.type = GeckoType.Connected;
+        this._currentGeckoData.color = Global.ColorType;
+        this._currentGeckoData.properties ??= {};
+        this._currentGeckoData.properties.specialGecko ??= {};
+
+        const specialGecko = this._currentGeckoData.properties.specialGecko;
+        const connectedMembers = specialGecko.connectedMembers ?? [];
+        if (connectedMembers.length === 0) {
+            connectedMembers.push(this.createConnectedChainMember(this._idGeckoIncrement, Global.ColorType, 0));
+            specialGecko.connectedMembers = connectedMembers;
+            return;
+        }
+
+        const lastMember = connectedMembers[connectedMembers.length - 1];
+        if ((lastMember.length ?? 0) === 0) {
+            lastMember.color = Global.ColorType;
+            specialGecko.connectedMembers = connectedMembers;
+            return;
+        }
+
+        lastMember.length += 1;
+        connectedMembers.push(this.createConnectedChainMember(this._idGeckoIncrement + connectedMembers.length, Global.ColorType, 0));
+        specialGecko.connectedMembers = connectedMembers;
+    }
+
+    private incrementCurrentConnectedMemberLength() {
+        const connectedMembers = this._currentGeckoData?.properties?.specialGecko?.connectedMembers;
+        if (!connectedMembers || connectedMembers.length === 0) {
+            return;
+        }
+
+        connectedMembers[connectedMembers.length - 1].length += 1;
+    }
+
+    private createConnectedChainMember(id: number, color: ColorType, length: number): ConnectedChainMemberData {
+        return {
+            id,
+            type: GeckoType.Normal,
+            color,
+            length,
+            reversed: false,
+        };
+    }
+
+    private getConnectedMemberBodyCount(member: ConnectedChainMemberData, isLastMember: boolean): number {
+        const length = Math.max(0, member.length ?? 0);
+        if (isLastMember) {
+            return length;
+        }
+
+        return Math.max(0, length - 1);
+    }
+
+    private getConnectedMemberContext(geckoParts: GeckoBody[], connectedMembers: ConnectedChainMemberData[], bodyIndex: number) {
+        if (bodyIndex < 0 || bodyIndex >= geckoParts.length) {
+            return null;
+        }
+
+        let partStart = 0;
+        for (let memberIndex = 0; memberIndex < connectedMembers.length; memberIndex++) {
+            const member = connectedMembers[memberIndex];
+            const memberLength = this.getConnectedMemberBodyCount(member, memberIndex === connectedMembers.length - 1);
+            const partEnd = memberIndex === connectedMembers.length - 1
+                ? geckoParts.length
+                : Math.min(geckoParts.length, partStart + memberLength);
+
+            if (bodyIndex >= partStart && bodyIndex < partEnd) {
+                return {
+                    memberIndex,
+                    member,
+                    geckoParts: geckoParts.slice(partStart, partEnd),
+                };
+            }
+
+            partStart = partEnd;
+        }
+
+        return null;
+    }
+
+    private applySpecialGeckoToParts(geckoData: GeckoData, geckoParts: GeckoBody[]) {
+        if (!geckoData || geckoParts.length === 0) {
+            return;
+        }
+
+        for (const part of geckoParts) {
+            part.setColor(geckoData.color);
+        }
+
+        const input: InputSpecialGeckoPopup = {
+            geckoData,
+            geckoParts,
+            specialType: geckoData.type,
+            dataSpecialGecko: geckoData.properties?.specialGecko ?? {},
+            dataCarryItem: geckoData.properties?.carryItem,
+            dataCover: geckoData.Cover?.[0],
+        };
+
+        SpecialGeckoHandler.addSpecialGecko(input);
+        GeckoItemHandler.addGeckoItem(input);
+        CoverHandler.addCoverForGecko(input);
+    }
+
+    private normalizeConnectedMembers(geckoData: GeckoData) {
+        const connectedMembers = geckoData.properties?.specialGecko?.connectedMembers;
+        if (!connectedMembers || connectedMembers.length === 0) {
+            return;
+        }
+
+        const normalizedMembers = connectedMembers.filter((member) => (member.length ?? 0) > 0);
+        if (normalizedMembers.length === connectedMembers.length) {
+            return;
+        }
+
+        if (normalizedMembers.length === 0) {
+            delete geckoData.properties!.specialGecko;
+            return;
+        }
+
+        geckoData.properties!.specialGecko!.connectedMembers = normalizedMembers;
     }
 
     saveData() {
@@ -1854,18 +2087,16 @@ export class Tool extends Component {
     }
 
     onSaveLevel() {
+        if (this._sectionBodies.length > 0) this.setDataGecko();
         const errorMessage = this.hasDesignErrorInLevel();
         if (errorMessage) {
             EventManager.instance.emit(Event.SHOW_DESIGN_ERROR_POPUP, errorMessage);
             return;
-            
         }
-
         this.saveData();
         this.onReturnWithoutSave();
     }
 }
-
 
 
 

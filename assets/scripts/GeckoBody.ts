@@ -101,7 +101,10 @@ export class GeckoBody extends Component {
     }
 
     onClickAddSpecialGecko() {
-        EventManager.instance.emit(Event.ON_CHANGE_GECKO_TO_SPECIAL, this._geckoId);
+        EventManager.instance.emit(Event.ON_CHANGE_GECKO_TO_SPECIAL, {
+            geckoId: this._geckoId,
+            bodyPos: this.RootPos,
+        });
     }
 }
 

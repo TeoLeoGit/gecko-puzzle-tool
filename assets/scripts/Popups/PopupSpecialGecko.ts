@@ -323,10 +323,6 @@ export class PopupSpecialGecko extends Component {
             delete specialGecko.unlockNumber;
         }
 
-        if (geckoType === GeckoType.Connected) {
-            delete specialGecko.connectedGeckoIds;
-        }
-
         if (Object.keys(specialGecko).length === 0) {
             delete this._input.geckoData.properties?.specialGecko;
             this._input.dataSpecialGecko = undefined;

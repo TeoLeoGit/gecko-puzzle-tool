@@ -31,8 +31,8 @@ export type SpecialGeckoData = {
   stackColors?: ColorType[];
   // hidden gecko
   unlockNumber?: number;
-  // connected gecko: array of gecko IDs in the connection chain
-  connectedGeckoIds?: number[];
+  // stack gecko
+  connectedMembers?: ConnectedChainMemberData[];
 }
 
 export type GeckoProperties = {
@@ -49,6 +49,11 @@ export type GeckoData = {
   parts?: GeckoPart[];
   Cover?: CoverData[];
   //layers?: CoverData[];
+}
+
+export interface ConnectedChainMemberData extends GeckoData {
+  length: number;
+  reversed: boolean;
 }
 
 export type HoleData = {
