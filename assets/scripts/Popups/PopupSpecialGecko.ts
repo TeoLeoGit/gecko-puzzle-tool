@@ -95,11 +95,13 @@ export class PopupSpecialGecko extends Component {
             case CarryItemType.Lock:
                 this._input.dataCarryItem.colorLockType = 1;
                 break;
-                case CarryItemType.Key:
+            case CarryItemType.Key:
                 this._input.dataCarryItem.colorLockType = 1;
                 break;
             case CarryItemType.Scissors:
                 this._input.dataCarryItem.targetGroundId = 1;
+                break;
+            case CarryItemType.TimeBonus:
                 break;
             default:
                 return;
@@ -110,7 +112,10 @@ export class PopupSpecialGecko extends Component {
         }
         this._input.geckoData.properties.carryItem = this._input.dataCarryItem;
         //GeckoItemHandler.addGeckoItem(this._input);
-        EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
+        if (carryItemType !== CarryItemType.TimeBonus)
+            EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
+        else 
+            this.updateViewProperties();
     }
 
     onChooseGeckoCover(_event: CocosEvent, customEventData?: string) {

@@ -38,6 +38,12 @@ export class GeckoItemHandler {
             this.addItemSprite(rootNode, spriteName, carryItem.type);
             return;
         }
+
+        if (carryItem.type === CarryItemType.TimeBonus) {
+            const spriteName = 'item_time';
+            this.addItemSprite(rootNode, spriteName, carryItem.type);
+            return;
+        }
     }
 
     private static addItemSprite(rootNode: Node, spriteName: string, carryItemType: CarryItemType) {

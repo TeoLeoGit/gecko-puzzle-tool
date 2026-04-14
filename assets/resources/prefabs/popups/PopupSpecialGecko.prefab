@@ -3509,7 +3509,7 @@
         "__id__": 147
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 153
@@ -3653,14 +3653,14 @@
       "b": 255,
       "a": 255
     },
-    "_string": "Hidden",
+    "_string": "Time bonus",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 25,
+    "_actualFontSize": 19,
     "_fontSize": 25,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
-    "_overflow": 1,
+    "_overflow": 2,
     "_enableWrapText": false,
     "_font": null,
     "_isSystemFontUsed": true,
@@ -3899,7 +3899,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "1a148f44-208c-4305-a11c-013981352c18@f9941",
+      "__uuid__": "3be8c412-50ce-4f19-825f-ee6e1acc856d@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 1,
@@ -3990,8 +3990,8 @@
     },
     "component": "",
     "_componentId": "f8c6dLilIFGRqQ6Axi1V7aa",
-    "handler": "onChooseSpecialGecko",
-    "customEventData": "2"
+    "handler": "onChooseGeckoWithItem",
+    "customEventData": "4"
   },
   {
     "__type__": "cc.PrefabInfo",

@@ -3,12 +3,14 @@ export enum GeckoType {
   Stacked = 1,
   Hidden = 2,
   Connected = 3,
+  StraightGecko = 4,
 }
 
 export enum CarryItemType {
   Lock = 1,
   Key = 2,
   Scissors = 3,
+  TimeBonus = 4,
 }
 
 export enum GroundType {
