@@ -35,8 +35,14 @@ export class PopupSpecialGecko extends Component {
         this.node.active = true;
         this._input = input;
         this.updateViewProperties();
-        if (this.isConnectedGecko()) this.btnReverseConnectedGecko.active = true;
-        else this.btnReverseConnectedGecko.active = false;
+
+        const isConnectedGecko = this.isConnectedGecko();
+        this.btnReverseConnectedGecko.active = isConnectedGecko;
+
+        const checkNode = this.btnReverseConnectedGecko.getChildByName('Check');
+        if (checkNode) {
+            checkNode.active = isConnectedGecko && (this._input?.geckoData?.reversed ?? false);
+        }
     }
 
     onClickClose() {
