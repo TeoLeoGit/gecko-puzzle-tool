@@ -572,7 +572,6 @@ export class GroundObject extends Component {
         if (!labelNode) {
             labelNode = new Node('Label_ground_count');
             this.node.addChild(labelNode);
-            labelNode.setPosition(0, 25, 0);
         }
 
         let label = labelNode.getComponent(Label);

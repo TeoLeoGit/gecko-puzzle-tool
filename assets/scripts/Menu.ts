@@ -41,7 +41,7 @@ export class Menu extends Component {
         levels.forEach(level => {
             const item = instantiate(this.prefabItemLevel);
             item.parent = this.levelContainer;
-            item.getComponent(ItemLevel).init(level);
+            item.getComponent(ItemLevel).init(level.level);
             this.itemLevels.push(item.getComponent(ItemLevel));
         })
     }
@@ -66,7 +66,7 @@ export class Menu extends Component {
         Data.addNewLevel(newLevel);
         const item = instantiate(this.prefabItemLevel);
         item.parent = this.levelContainer;
-        item.getComponent(ItemLevel).init(newLevel);
+        item.getComponent(ItemLevel).init(newLevel.level);
         this.itemLevels.push(item.getComponent(ItemLevel));
     }
 
@@ -76,6 +76,10 @@ export class Menu extends Component {
 
     openMenu() {
         this.node.active = true;
+    }
+
+    openSwapLevel() {
+        EventManager.instance.emit(Event.SHOW_LEVEL_SWAP_EDITOR);
     }
 
     onFindLevelValueChanged(editBox: EditBox) {

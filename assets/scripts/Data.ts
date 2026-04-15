@@ -70,18 +70,25 @@ export class Data {
         if (!this._levels) {
             throw new Error("Levels not loaded");
         }
-        if (
-            fLevel < 0 ||
-            sLevel < 0 ||
-            fLevel >= this._levels.length ||
-            sLevel >= this._levels.length
-        ) {
+        if (fLevel === sLevel) {
+            return;
+        }
+
+        const firstIndex = this._levels.findIndex((levelData) => levelData.level === fLevel);
+        const secondIndex = this._levels.findIndex((levelData) => levelData.level === sLevel);
+
+        if (firstIndex === -1 || secondIndex === -1) {
             throw new Error(`One or both levels ${fLevel}, ${sLevel} not found in data`);
         }
 
-        const temp = this._levels[fLevel];
-        this._levels[fLevel] = this._levels[sLevel];
-        this._levels[sLevel] = temp;
+        const prevFirstLevel = this._levels[firstIndex].level;
+        log(this._levels[firstIndex].level);
+        this._levels[firstIndex].level = this._levels[secondIndex].level;
+        this._levels[secondIndex].level = prevFirstLevel;
+        log(this._levels[firstIndex].level);
+
+        this._levels.sort((a, b) => a.level - b.level);
+        log('ok!');
     }
 
     public static nextLevelId(): number {

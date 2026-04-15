@@ -9,17 +9,11 @@ export class ItemLevel extends Component {
    @property(Label)
    lblLevel: Label = null!;
 
-   private _level: LevelData = null;
    private _levelNumb: number = -1;
 
-   public get Level(): LevelData {
-       return this._level;
-   }
-
-   init(levelData: LevelData) {
-       this.lblLevel.string = `LEVEL ${levelData.level}`;
-       this._levelNumb = levelData.level;
-       this._level = levelData;
+   init(levelNumb: number) {
+       this.lblLevel.string = `LEVEL ${levelNumb}`;
+       this._levelNumb = levelNumb;
    }
 
    onClickEdit() {
