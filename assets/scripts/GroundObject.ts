@@ -31,11 +31,11 @@ export class GroundObject extends Component {
     private static readonly ROPE_SEGMENT_SCALE = 0.6;
 
     protected onLoad(): void {
-        EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual, this);
+        EventManager.instance.on(Event.UPDATE_GROUND_VIEW_PROPERTIES, this.refreshVisual, this);
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual);
+        EventManager.instance.off(Event.UPDATE_GROUND_VIEW_PROPERTIES, this.refreshVisual);
         this.clearRopeSprites();
         this.clearSlidingGateSprites();
         this.clearDirectionArrow();

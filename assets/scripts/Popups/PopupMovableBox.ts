@@ -45,7 +45,7 @@ export class PopupMovableBox extends Component {
     }
 
     onClickClose() {
-        EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
+        EventManager.instance.emit(Event.UPDATE_GROUND_VIEW_PROPERTIES);
         this.node.active = false;
     }
 

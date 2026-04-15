@@ -24,11 +24,11 @@ export class CoverObject extends Component {
     private _coverData: LevelCoverData | null = null;
 
     protected onLoad(): void {
-        EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual, this);
+        EventManager.instance.on(Event.UPDATE_COVER_VIEW_PROPERTIES, this.refreshVisual, this);
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.refreshVisual);
+        EventManager.instance.off(Event.UPDATE_COVER_VIEW_PROPERTIES, this.refreshVisual);
     }
 
     public get RootPos(): Vec2 {
