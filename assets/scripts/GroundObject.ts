@@ -113,6 +113,11 @@ export class GroundObject extends Component {
             return;
         }
 
+        if (groundData.type === GroundType.Stone_Wall) {
+            this.refreshCountLabel();
+            return;
+        }
+
         if (groundData.type === GroundType.Moveable_Box) {
             this.refreshSpanGroundVisual();
             this.refreshMoveableBoxDirectionArrow();
@@ -169,6 +174,10 @@ export class GroundObject extends Component {
         if (type !== GroundType.Rope) {
             this.clearRopeSprites();
             this.clearIdLabel();
+        }
+
+        if (type !== GroundType.Stone_Wall) {
+            this.clearCountLabel();
         }
 
         if (type !== GroundType.Sliding_Gate) {
@@ -301,9 +310,15 @@ export class GroundObject extends Component {
     }
 
     private refreshVisual() {
+        if (!this.node) return;
         if (this._groundType === GroundType.Rope) {
             this.refreshRopeVisual();
             this.updateIdLabel();
+            return;
+        }
+
+        if (this._groundType === GroundType.Stone_Wall) {
+            this.refreshCountLabel();
             return;
         }
 
@@ -543,8 +558,43 @@ export class GroundObject extends Component {
         label.outlineWidth = 2;
     }
 
+    private refreshCountLabel() {
+        if (this._groundData === null) return;
+        if (this._groundType !== GroundType.Stone_Wall) {
+            this.clearCountLabel();
+            return;
+        }
+
+        let labelNode = this.node.getChildByName('Label_ground_count');
+        if (!labelNode) {
+            labelNode = new Node('Label_ground_count');
+            this.node.addChild(labelNode);
+            labelNode.setPosition(0, 25, 0);
+        }
+
+        let label = labelNode.getComponent(Label);
+        if (!label) {
+            label = labelNode.addComponent(Label);
+        }
+        label.string = String(this._groundData.properties?.count ?? 0);
+        label.isBold = true;
+
+        let outline = labelNode.getComponent(LabelOutline);
+        if (!outline) {
+            outline = labelNode.addComponent(LabelOutline);
+        }
+        label.outlineWidth = 2;
+    }
+
     private clearIdLabel() {
         const labelNode = this.node.getChildByName('Label_ground_id');
+        if (labelNode) {
+            labelNode.destroy();
+        }
+    }
+
+    private clearCountLabel() {
+        const labelNode = this.node.getChildByName('Label_ground_count');
         if (labelNode) {
             labelNode.destroy();
         }

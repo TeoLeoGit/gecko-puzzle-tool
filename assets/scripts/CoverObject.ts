@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
+import { _decorator, Color, Component, Label, LabelOutline, Node, Sprite, UIOpacity, UITransform, Vec2 } from 'cc';
 import { CoverProperties, InputCoverPopup, LevelCoverData } from './Config';
 import { Event } from './Constant';
 import EventManager from './EventManager';
@@ -109,6 +109,9 @@ export class CoverObject extends Component {
         const opacity = this.sprCover.getComponent(UIOpacity) ?? this.sprCover.addComponent(UIOpacity);
         opacity.opacity = Math.round(255 * 0.85);
         this.resetSpriteTransform();
+        if (!this.hasCountLabelType()) {
+            this.clearCountLabel();
+        }
 
         if (type === CoverType.None) {
             opacity.opacity = 0;
@@ -128,7 +131,10 @@ export class CoverObject extends Component {
     }
 
     private refreshVisual() {
+        if (!this.node) return;
+
         this.resetSpriteTransform();
+        this.refreshCountLabel();
 
         const spriteNode = this.sprCover.node;
         const spriteTransform = spriteNode.getComponent(UITransform);
@@ -157,6 +163,33 @@ export class CoverObject extends Component {
         EventManager.instance.emit(Event.UPDATE_COVERED_CELLS, this);
     }
 
+    private refreshCountLabel() {
+        if (!this._coverData?.properties || !this.hasCountLabelType()) {
+            this.clearCountLabel();
+            return;
+        }
+
+        let labelNode = this.node.getChildByName('Label_cover_count');
+        if (!labelNode) {
+            labelNode = new Node('Label_cover_count');
+            this.node.addChild(labelNode);
+            labelNode.setPosition(0, 25, 0);
+        }
+
+        let label = labelNode.getComponent(Label);
+        if (!label) {
+            label = labelNode.addComponent(Label);
+        }
+        label.string = String(this._coverData.properties.count ?? 0);
+        label.isBold = true;
+
+        let outline = labelNode.getComponent(LabelOutline);
+        if (!outline) {
+            outline = labelNode.addComponent(LabelOutline);
+        }
+        label.outlineWidth = 2;
+    }
+
     private resetSpriteTransform() {
         const spriteNode = this.sprCover.node;
         const spriteTransform = spriteNode.getComponent(UITransform);
@@ -166,6 +199,17 @@ export class CoverObject extends Component {
 
         spriteTransform.setContentSize(BASE_SPRITE_WIDTH, BASE_SPRITE_HEIGHT);
         spriteNode.setPosition(0, 0, 0);
+    }
+
+    private hasCountLabelType(): boolean {
+        return this._coverType === CoverType.Crate || this._coverType === CoverType.Ice;
+    }
+
+    private clearCountLabel() {
+        const labelNode = this.node.getChildByName('Label_cover_count');
+        if (labelNode) {
+            labelNode.destroy();
+        }
     }
 
     private createDefaultProperties(): CoverProperties {
