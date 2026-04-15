@@ -169,15 +169,15 @@ export class Tool extends Component {
         this.editBoxRow.node.off(EditBox.EventType.TEXT_CHANGED, this.onRowChanged, this);
         this.editBoxTime.node.off(EditBox.EventType.TEXT_CHANGED, this.onTimeChanged, this);
 
-        EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor);
-        EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode);
-        EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode);
-        EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel);
-        EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko);
-        EventManager.instance.off(Event.FLIP_CONNECTED_GECKO_REVERSE, this.onFlipConnectedGeckoReverse);
-        EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole);
-        EventManager.instance.off(Event.UPDATE_COVERED_CELLS, this.markCoveredCells);
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells);
+        EventManager.instance.off(Event.CHANGE_COLOR, this.onChangeColor, this);
+        EventManager.instance.off(Event.CHOOSE_GECKO_BODY, this.onChooseGeckoDesignMode, this);
+        EventManager.instance.off(Event.CHOOSE_HOLE, this.onChooseHoleDesignMode, this);
+        EventManager.instance.off(Event.EDIT_LEVEL, this.loadLevel, this);
+        EventManager.instance.off(Event.ON_CHANGE_GECKO_TO_SPECIAL, this.onShowPopupSpecialGecko, this);
+        EventManager.instance.off(Event.FLIP_CONNECTED_GECKO_REVERSE, this.onFlipConnectedGeckoReverse, this);
+        EventManager.instance.off(Event.ON_CHANGE_HOLE_TO_SPECIAL, this.onShowPopupSpecialHole, this);
+        EventManager.instance.off(Event.UPDATE_COVERED_CELLS, this.markCoveredCells, this);
+        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.rebuildOccupiedCells, this);
     }
 
     onMouseDown(event: EventMouse) {

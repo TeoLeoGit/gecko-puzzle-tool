@@ -25,7 +25,7 @@ export class PopupMultiHole extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_MULTI_HOLE_POPUP, this.onShow);
+        EventManager.instance.off(Event.SHOW_MULTI_HOLE_POPUP, this.onShow, this);
     }
 
     onShow(input: InputSpecialHolePopup) {

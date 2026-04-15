@@ -28,7 +28,7 @@ export class CoverObject extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.UPDATE_COVER_VIEW_PROPERTIES, this.refreshVisual);
+        EventManager.instance.off(Event.UPDATE_COVER_VIEW_PROPERTIES, this.refreshVisual, this);
     }
 
     public get RootPos(): Vec2 {
@@ -131,8 +131,6 @@ export class CoverObject extends Component {
     }
 
     private refreshVisual() {
-        if (!this.node) return;
-
         this.resetSpriteTransform();
         this.refreshCountLabel();
 

@@ -26,7 +26,7 @@ export class PopupStackGecko extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_POPUP_STACK_GECKO, this.onShow);
+        EventManager.instance.off(Event.SHOW_POPUP_STACK_GECKO, this.onShow, this);
     }
 
     onShow(input: InputSpecialGeckoPopup) {

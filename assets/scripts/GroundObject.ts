@@ -35,7 +35,7 @@ export class GroundObject extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.UPDATE_GROUND_VIEW_PROPERTIES, this.refreshVisual);
+        EventManager.instance.off(Event.UPDATE_GROUND_VIEW_PROPERTIES, this.refreshVisual, this);
         this.clearRopeSprites();
         this.clearSlidingGateSprites();
         this.clearDirectionArrow();
@@ -310,7 +310,6 @@ export class GroundObject extends Component {
     }
 
     private refreshVisual() {
-        if (!this.node) return;
         if (this._groundType === GroundType.Rope) {
             this.refreshRopeVisual();
             this.updateIdLabel();

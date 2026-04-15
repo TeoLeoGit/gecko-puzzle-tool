@@ -14,7 +14,7 @@ export class PopupDesignError extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_DESIGN_ERROR_POPUP, this.onShow);
+        EventManager.instance.off(Event.SHOW_DESIGN_ERROR_POPUP, this.onShow, this);
     }
 
     onShow(errorString: string) {
@@ -26,5 +26,4 @@ export class PopupDesignError extends Component {
         this.node.active = false;
     }
 }
-
 

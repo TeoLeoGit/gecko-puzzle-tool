@@ -30,7 +30,7 @@ export class Cell extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.DELETE_ONE_BODY, this.onDeleteOneBody);
+        EventManager.instance.off(Event.DELETE_ONE_BODY, this.onDeleteOneBody, this);
     }
 
     public get X(): number {

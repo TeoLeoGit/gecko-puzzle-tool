@@ -25,8 +25,8 @@ export class PopupSpecialHole extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_SPECIAL_HOLE_POPUP, this.onShow);
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties);
+        EventManager.instance.off(Event.SHOW_SPECIAL_HOLE_POPUP, this.onShow, this);
+        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties, this);
     }
 
     onShow(input: InputSpecialHolePopup) {

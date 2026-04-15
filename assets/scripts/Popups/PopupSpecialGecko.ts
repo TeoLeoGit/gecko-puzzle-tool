@@ -27,8 +27,8 @@ export class PopupSpecialGecko extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_SPECIAL_GECKO_POPUP, this.onShow);
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties);
+        EventManager.instance.off(Event.SHOW_SPECIAL_GECKO_POPUP, this.onShow, this);
+        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties, this);
     }
 
     onShow(input: InputSpecialGeckoPopup) {

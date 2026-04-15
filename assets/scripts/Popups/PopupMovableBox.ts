@@ -30,7 +30,7 @@ export class PopupMovableBox extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_MOVABLE_BOX_POPUP, this.onShow);
+        EventManager.instance.off(Event.SHOW_MOVABLE_BOX_POPUP, this.onShow, this);
         this.editBoxWidth.node.off(EditBox.EventType.TEXT_CHANGED, this.onValueChanged, this);
         this.editBoxHeight.node.off(EditBox.EventType.TEXT_CHANGED, this.onValueChanged, this);
         for (const toggle of this.dirToggles) {

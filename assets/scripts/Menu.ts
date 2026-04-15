@@ -30,9 +30,9 @@ export class Menu extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.INIT_MENU, this.init);
-        EventManager.instance.off(Event.EDIT_LEVEL, this.onEditLevel);
-        EventManager.instance.off(Event.OPEN_MENU, this.openMenu);
+        EventManager.instance.off(Event.INIT_MENU, this.init, this);
+        EventManager.instance.off(Event.EDIT_LEVEL, this.onEditLevel, this);
+        EventManager.instance.off(Event.OPEN_MENU, this.openMenu, this);
     }
 
     init() {

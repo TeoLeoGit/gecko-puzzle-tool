@@ -30,7 +30,7 @@ export class PopupAddProperties extends Component {
     }
 
     protected onDestroy(): void {
-        EventManager.instance.off(Event.SHOW_ADD_PROPERTIES_POPUP, this.onShow);
+        EventManager.instance.off(Event.SHOW_ADD_PROPERTIES_POPUP, this.onShow, this);
     }
 
     onShow(input: InputSpecialGeckoPopup | InputSpecialHolePopup | InputGroundPopup | InputCoverPopup) {
