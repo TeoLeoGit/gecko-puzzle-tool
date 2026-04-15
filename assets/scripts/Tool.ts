@@ -1631,6 +1631,7 @@ export class Tool extends Component {
                 memberContext.member.properties.specialGecko ??= {};
                 const input: InputSpecialGeckoPopup = {
                     geckoData: memberContext.member,
+                    connectedMemberData: memberContext.member,
                     geckoParts: memberContext.geckoParts,
                     specialType: memberContext.member.type,
                     dataSpecialGecko: memberContext.member.properties.specialGecko,
@@ -1662,21 +1663,25 @@ export class Tool extends Component {
     }
 
     onFlipConnectedGeckoReverse(input: InputSpecialGeckoPopup) {
-        if (!input?.geckoData || input.geckoData.type !== GeckoType.Connected || !input.geckoParts?.length) {
+        const geckoData = input?.connectedMemberData ?? input?.geckoData;
+        if (!geckoData || !input.geckoParts?.length) {
             return;
         }
 
         input.geckoData.reversed = !input.geckoData.reversed;
+        if (input.connectedMemberData) {
+            input.connectedMemberData.reversed = input.geckoData.reversed;
+        }
         const memberParts = input.geckoParts;
-        const reversed = input.geckoData.reversed === true;
+        const reversed = geckoData.reversed === true;
 
         if (reversed) {
             for (let i = 0; i < memberParts.length - 1; i++) {
-                memberParts[i].setBody(input.geckoData.color);
+                memberParts[i].setBody(geckoData.color);
             }
 
             const headBody = memberParts[memberParts.length - 1];
-            headBody.setHead(input.geckoData.color);
+            headBody.setHead(geckoData.color);
             if (memberParts.length > 1) {
                 headBody.setHeadLookDirection(memberParts[memberParts.length - 2].RootPos);
             }
@@ -1686,11 +1691,11 @@ export class Tool extends Component {
             }
         } else {
             for (let i = 1; i < memberParts.length; i++) {
-                memberParts[i].setBody(input.geckoData.color);
+                memberParts[i].setBody(geckoData.color);
             }
 
             const headBody = memberParts[0];
-            headBody.setHead(input.geckoData.color);
+            headBody.setHead(geckoData.color);
             if (memberParts.length > 1) {
                 headBody.setHeadLookDirection(memberParts[1].RootPos);
             }
@@ -1819,6 +1824,10 @@ export class Tool extends Component {
         }
 
         this.normalizeConnectedMembers(this._currentGeckoData);
+        if (this._currentGeckoData.type === GeckoType.Connected
+            && (this._currentGeckoData.properties?.specialGecko?.connectedMembers?.length ?? 0) > 0) {
+            this._currentGeckoData.color = 99 as ColorType;
+        }
 
         const data: GeckoData = {
             ...this._currentGeckoData,

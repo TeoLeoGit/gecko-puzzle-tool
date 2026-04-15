@@ -129,6 +129,7 @@ export type InputSpecialGeckoPopup = {
   geckoData: GeckoData;
   geckoParts: GeckoBody[];
   specialType: GeckoType;
+  connectedMemberData?: ConnectedChainMemberData;
   dataSpecialGecko?: SpecialGeckoData;
   dataCarryItem?: CarryItemData;
   dataCover?: CoverData;

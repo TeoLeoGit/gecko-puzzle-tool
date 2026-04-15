@@ -36,12 +36,13 @@ export class PopupSpecialGecko extends Component {
         this._input = input;
         this.updateViewProperties();
 
+        const geckoData = this.getEditableGeckoData();
         const isConnectedGecko = this.isConnectedGecko();
         this.btnReverseConnectedGecko.active = isConnectedGecko;
 
         const checkNode = this.btnReverseConnectedGecko.getChildByName('Check');
         if (checkNode) {
-            checkNode.active = isConnectedGecko && (this._input?.geckoData?.reversed ?? false);
+            checkNode.active = isConnectedGecko && (geckoData.reversed ?? false);
         }
     }
 
@@ -72,12 +73,13 @@ export class PopupSpecialGecko extends Component {
             return;
         }
 
-        this.ensureGeckoProperties();
+        const geckoData = this.getEditableGeckoData();
+        this.ensureGeckoProperties(geckoData);
         this.addSpecialType(geckoType);
 
         if (geckoType === GeckoType.Stacked) {
             this._input.dataSpecialGecko ??= {};
-            this._input.geckoData.properties.specialGecko = this._input.dataSpecialGecko;
+            geckoData.properties!.specialGecko = this._input.dataSpecialGecko;
             EventManager.instance.emit(Event.SHOW_POPUP_STACK_GECKO, this._input);
             return;
         }
@@ -87,7 +89,7 @@ export class PopupSpecialGecko extends Component {
             this._input.dataCarryItem = undefined;
             this._input.dataCover = undefined;
             this._input.dataSpecialGecko.unlockNumber = 1;
-            this._input.geckoData.properties.specialGecko = this._input.dataSpecialGecko;
+            geckoData.properties!.specialGecko = this._input.dataSpecialGecko;
             SpecialGeckoHandler.addSpecialGecko(this._input);
             EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
             return;
@@ -95,7 +97,7 @@ export class PopupSpecialGecko extends Component {
 
         if (geckoType === GeckoType.StraightGecko) {
             this._input.dataSpecialGecko ??= {};
-            this._input.geckoData.properties.specialGecko = this._input.dataSpecialGecko;
+            geckoData.properties!.specialGecko = this._input.dataSpecialGecko;
             SpecialGeckoHandler.addSpecialGecko(this._input);
             this.updateViewProperties();
             return;
@@ -136,10 +138,11 @@ export class PopupSpecialGecko extends Component {
                 return;
         }
 
-        if (!this._input.geckoData.properties) {
-            this._input.geckoData.properties = {};
+        const geckoData = this.getEditableGeckoData();
+        if (!geckoData.properties) {
+            geckoData.properties = {};
         }
-        this._input.geckoData.properties.carryItem = this._input.dataCarryItem;
+        geckoData.properties.carryItem = this._input.dataCarryItem;
         //GeckoItemHandler.addGeckoItem(this._input);
         if (carryItemType !== CarryItemType.TimeBonus)
             EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
@@ -163,11 +166,12 @@ export class PopupSpecialGecko extends Component {
             return;
         }
 
-        if (!this._input.geckoData.Cover) {
-            this._input.geckoData.Cover = [];
+        const geckoData = this.getEditableGeckoData();
+        if (!geckoData.Cover) {
+            geckoData.Cover = [];
         }
 
-        let coverData = this._input.geckoData.Cover.find((cover) => cover.type === coverType);
+        let coverData = geckoData.Cover.find((cover) => cover.type === coverType);
         if (!coverData) {
             coverData = {
                 type: coverType,
@@ -178,7 +182,7 @@ export class PopupSpecialGecko extends Component {
                 coverData.properties.count = 1;
             }
 
-            this._input.geckoData.Cover.push(coverData);
+            geckoData.Cover.push(coverData);
         }
 
         this._input.dataCover = coverData;
@@ -193,7 +197,8 @@ export class PopupSpecialGecko extends Component {
 
         this.dataPreview.removeAllChildren();
 
-        const dataSpecialGecko = this._input?.geckoData?.properties?.specialGecko ?? {};
+        const geckoData = this.getEditableGeckoData();
+        const dataSpecialGecko = geckoData?.properties?.specialGecko ?? {};
         for (const propertyName of Object.keys(dataSpecialGecko)) {
             const previewNode = new Node(`Preview_${propertyName}`);
             const label = previewNode.addComponent(Label);
@@ -203,7 +208,7 @@ export class PopupSpecialGecko extends Component {
             this.dataPreview.addChild(previewNode);
         }
 
-        const dataCarryItem = this._input?.geckoData?.properties?.carryItem ?? {};
+        const dataCarryItem = geckoData?.properties?.carryItem ?? {};
         for (const propertyName of Object.keys(dataCarryItem)) {
             const previewNode = new Node(`Preview_${propertyName}`);
             const label = previewNode.addComponent(Label);
@@ -217,12 +222,12 @@ export class PopupSpecialGecko extends Component {
             const previewNode = new Node('Preview_reversed');
             const label = previewNode.addComponent(Label);
             label.string = JSON.stringify({
-                reversed: this._input.geckoData.reversed ?? false,
+                reversed: geckoData.reversed ?? false,
             });
             this.dataPreview.addChild(previewNode);
         }
 
-        const coverDataList = this._input?.geckoData?.Cover ?? [];
+        const coverDataList = geckoData?.Cover ?? [];
         for (let coverIndex = 0; coverIndex < coverDataList.length; coverIndex++) {
             const coverData = coverDataList[coverIndex];
             if (!coverData || coverData.type == null) {
@@ -242,6 +247,7 @@ export class PopupSpecialGecko extends Component {
     }
 
     updateViewSelectedType() {
+        const geckoData = this.getEditableGeckoData();
         for (const buttonNode of this.btnContainer.children) {
             const button = buttonNode.getComponent(Button);
 
@@ -261,11 +267,11 @@ export class PopupSpecialGecko extends Component {
             }
 
             if (handler === 'onChooseGeckoWithItem') {
-                isSelected = this._input?.geckoData?.properties?.carryItem?.type === eventData;
+                isSelected = geckoData?.properties?.carryItem?.type === eventData;
             }
 
             if (handler === 'onChooseGeckoCover') {
-                isSelected = (this._input?.geckoData?.Cover ?? []).some((cover) => cover.type === eventData);
+                isSelected = (geckoData?.Cover ?? []).some((cover) => cover.type === eventData);
             }
 
             removedNode.active = isSelected;
@@ -297,13 +303,14 @@ export class PopupSpecialGecko extends Component {
 
     private removeSpecialGecko(geckoType: GeckoType) {
         const nextTypes = this.getAllSpecialTypes().filter((type) => type !== geckoType);
-        const geckoProperties = this._input.geckoData.properties;
+        const geckoData = this.getEditableGeckoData();
+        const geckoProperties = geckoData.properties;
         const specialGecko = geckoProperties?.specialGecko;
 
         this.removeSpecialTypeProperties(geckoType);
 
         if (nextTypes.length === 0) {
-            this._input.geckoData.type = GeckoType.Normal;
+            geckoData.type = GeckoType.Normal;
             this._input.specialType = GeckoType.Normal;
             this._input.dataSpecialGecko = undefined;
 
@@ -317,7 +324,7 @@ export class PopupSpecialGecko extends Component {
             return;
         }
 
-        this._input.geckoData.type = nextTypes[0];
+        geckoData.type = nextTypes[0];
         this._input.specialType = nextTypes[0];
 
         if (geckoProperties) {
@@ -340,7 +347,8 @@ export class PopupSpecialGecko extends Component {
     }
 
     private removeSpecialTypeProperties(geckoType: GeckoType) {
-        const specialGecko = this._input.geckoData.properties?.specialGecko;
+        const geckoData = this.getEditableGeckoData();
+        const specialGecko = geckoData.properties?.specialGecko;
         if (!specialGecko) {
             return;
         }
@@ -354,7 +362,7 @@ export class PopupSpecialGecko extends Component {
         }
 
         if (Object.keys(specialGecko).length === 0) {
-            delete this._input.geckoData.properties?.specialGecko;
+            delete geckoData.properties?.specialGecko;
             this._input.dataSpecialGecko = undefined;
             return;
         }
@@ -365,8 +373,9 @@ export class PopupSpecialGecko extends Component {
     private removeCarryItem() {
         this._input.dataCarryItem = undefined;
 
-        if (this._input.geckoData.properties) {
-            delete this._input.geckoData.properties.carryItem;
+        const geckoData = this.getEditableGeckoData();
+        if (geckoData.properties) {
+            delete geckoData.properties.carryItem;
         }
 
         GeckoItemHandler.removeGeckoItem(this._input);
@@ -374,7 +383,8 @@ export class PopupSpecialGecko extends Component {
     }
 
     private removeCover(coverType: CoverType) {
-        this._input.geckoData.Cover = (this._input.geckoData.Cover ?? []).filter((cover) => cover.type !== coverType);
+        const geckoData = this.getEditableGeckoData();
+        geckoData.Cover = (geckoData.Cover ?? []).filter((cover) => cover.type !== coverType);
         this._input.dataCover = undefined;
 
         CoverHandler.removeCoverForGecko(this._input, coverType);
@@ -382,22 +392,24 @@ export class PopupSpecialGecko extends Component {
     }
 
     private isConnectedGecko(): boolean {
-        return this._input?.geckoData?.type === GeckoType.Connected
-            && typeof (this._input.geckoData as { reversed?: unknown }).reversed === 'boolean';
+        return !!this._input?.connectedMemberData
+            || (this._input?.geckoData?.type === GeckoType.Connected
+                && typeof (this._input.geckoData as { reversed?: unknown }).reversed === 'boolean');
     }
 
-    private ensureGeckoProperties() {
-        this._input.geckoData.properties ??= {};
+    private ensureGeckoProperties(geckoData = this.getEditableGeckoData()) {
+        geckoData.properties ??= {};
     }
 
     private getAllSpecialTypes(): GeckoType[] {
+        const geckoData = this.getEditableGeckoData();
         const types: GeckoType[] = [];
-        const primaryType = this._input?.geckoData?.type;
+        const primaryType = geckoData?.type;
         if (primaryType != null && primaryType !== GeckoType.Normal) {
             types.push(primaryType);
         }
 
-        const extraTypes = this._input?.geckoData?.properties?.extraGeckoTypes ?? [];
+        const extraTypes = geckoData?.properties?.extraGeckoTypes ?? [];
         for (const extraType of extraTypes) {
             if (extraType !== GeckoType.Normal && !(types
                 .findIndex(type => type === extraType) !== -1)) {
@@ -413,9 +425,10 @@ export class PopupSpecialGecko extends Component {
             return;
         }
 
-        const currentType = this._input.geckoData.type;
-        if (currentType === GeckoType.Normal) {
-            this._input.geckoData.type = geckoType;
+        const geckoData = this.getEditableGeckoData();
+        const currentType = geckoData.type;
+        if (currentType === GeckoType.Normal || (this._input.connectedMemberData && currentType === GeckoType.Connected)) {
+            geckoData.type = geckoType;
             this._input.specialType = geckoType;
             return;
         }
@@ -425,11 +438,15 @@ export class PopupSpecialGecko extends Component {
             return;
         }
 
-        const extraTypes = this._input.geckoData.properties?.extraGeckoTypes ?? [];
+        const extraTypes = geckoData.properties?.extraGeckoTypes ?? [];
         if (!(extraTypes.findIndex(type => type === geckoType) !== -1)) {
             extraTypes.push(geckoType);
         }
-        this._input.geckoData.properties!.extraGeckoTypes = extraTypes;
+        geckoData.properties!.extraGeckoTypes = extraTypes;
         this._input.specialType = geckoType;
+    }
+
+    private getEditableGeckoData() {
+        return this._input?.connectedMemberData ?? this._input.geckoData;
     }
 }
