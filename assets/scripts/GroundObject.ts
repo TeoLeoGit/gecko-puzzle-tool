@@ -49,6 +49,10 @@ export class GroundObject extends Component {
         return this._groundType;
     }
 
+    public get ColorType(): ColorType | null {
+        return this._groundData?.properties?.color ?? null;
+    }
+
     public get OccupiedBounds() {
         const rowEnd = this._groundData?.properties?.rowEnd ?? this._y;
         const colEnd = this._groundData?.properties?.colEnd ?? this._x;

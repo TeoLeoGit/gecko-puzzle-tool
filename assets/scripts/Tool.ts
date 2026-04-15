@@ -972,7 +972,13 @@ export class Tool extends Component {
             return;
         }
 
-        const canCreate = this.fillEmptyCell(this._rootCell, newBlock);
+        const canUseColorPath = this.isMatchingColorPath(rootCell.X, rootCell.Y, Global.ColorType);
+        if (!rootCell.IsEmpty && !canUseColorPath) {
+            newBlock.destroy();
+            return;
+        }
+
+        const canCreate = canUseColorPath || this.fillEmptyCell(this._rootCell, newBlock);
         if (canCreate) {
             this.geckoParent.addChild(newBlock);
             newBlock.setWorldPosition(position);
@@ -1288,6 +1294,29 @@ export class Tool extends Component {
             const bounds = groundComp.OccupiedBounds;
             return x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
         });
+    }
+
+    private isMatchingColorPath(x: number, y: number, color: ColorType): boolean {
+        const ground = this.getGroundAt(x, y);
+        if (!ground || ground.GroundType !== GroundType.Color_Path) {
+            return false;
+        }
+
+        return ground.ColorType === color;
+    }
+
+    private getGroundAt(x: number, y: number): GroundObject | null {
+        const groundNode = this.groundParent.children.find((node) => {
+            const groundComp = node.getComponent(GroundObject);
+            if (!groundComp) {
+                return false;
+            }
+
+            const rootPos = groundComp.RootPos;
+            return rootPos.x === x && rootPos.y === y;
+        });
+
+        return groundNode?.getComponent(GroundObject) ?? null;
     }
 
     addCoverData(coverData: LevelCoverData) {
