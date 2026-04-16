@@ -1,5 +1,5 @@
 import { _decorator, Button, Event as CocosEvent, Component, Label, log, Node } from 'cc';
-import { CoverData, InputSpecialGeckoPopup } from '../Config';
+import { CarryItemData, CoverData, InputSpecialGeckoPopup } from '../Config';
 import { Event } from '../Constant';
 import EventManager from '../EventManager';
 import { SpecialGeckoHandler } from '../SpecialGeckoHandler';
@@ -112,37 +112,52 @@ export class PopupSpecialGecko extends Component {
 
         const carryItemType = parsed as CarryItemType;
         if (this.isRemovedActiveByHandler('onChooseGeckoWithItem', carryItemType)) {
-            this.removeCarryItem();
+            this.removeCarryItem(carryItemType);
             return;
         }
 
         this._input.dataSpecialGecko = undefined;
         this._input.dataCover = undefined;
-        this._input.dataCarryItem = {
-            type: carryItemType,
-        };
+        const geckoData = this.getEditableGeckoData();
+        if (!geckoData.properties) {
+            geckoData.properties = {};
+        }
+
+        let selectedCarryItem = geckoData.properties.carryItem;
+        if (selectedCarryItem?.type !== carryItemType) {
+            selectedCarryItem = (geckoData.properties.extraCarryItems ?? [])
+                .find((carryItem) => carryItem.type === carryItemType);
+        }
+
+        if (!selectedCarryItem) {
+            selectedCarryItem = {
+                type: carryItemType,
+            };
+
+            if (!geckoData.properties.carryItem) {
+                geckoData.properties.carryItem = selectedCarryItem;
+            } else {
+                geckoData.properties.extraCarryItems ??= [];
+                geckoData.properties.extraCarryItems.push(selectedCarryItem);
+            }
+        }
+        this._input.dataCarryItem = selectedCarryItem;
 
         switch (carryItemType) {
             case CarryItemType.Lock:
-                this._input.dataCarryItem.colorLockType = 1;
+                this._input.dataCarryItem.colorLockType ??= 1;
                 break;
             case CarryItemType.Key:
-                this._input.dataCarryItem.colorLockType = 1;
+                this._input.dataCarryItem.colorLockType ??= 1;
                 break;
             case CarryItemType.Scissors:
-                this._input.dataCarryItem.targetGroundId = 1;
+                this._input.dataCarryItem.targetGroundId ??= 1;
                 break;
             case CarryItemType.TimeBonus:
                 break;
             default:
                 return;
         }
-
-        const geckoData = this.getEditableGeckoData();
-        if (!geckoData.properties) {
-            geckoData.properties = {};
-        }
-        geckoData.properties.carryItem = this._input.dataCarryItem;
         //GeckoItemHandler.addGeckoItem(this._input);
         if (carryItemType !== CarryItemType.TimeBonus)
             EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
@@ -208,14 +223,20 @@ export class PopupSpecialGecko extends Component {
             this.dataPreview.addChild(previewNode);
         }
 
-        const dataCarryItem = geckoData?.properties?.carryItem ?? {};
-        for (const propertyName of Object.keys(dataCarryItem)) {
-            const previewNode = new Node(`Preview_${propertyName}`);
-            const label = previewNode.addComponent(Label);
-            label.string = JSON.stringify({
-                [propertyName]: dataCarryItem[propertyName],
-            });
-            this.dataPreview.addChild(previewNode);
+        const carryItems: CarryItemData[] = [];
+        if (geckoData?.properties?.carryItem) {
+            carryItems.push(geckoData.properties.carryItem);
+        }
+        carryItems.push(...(geckoData?.properties?.extraCarryItems ?? []));
+        for (const dataCarryItem of carryItems) {
+            for (const propertyName of Object.keys(dataCarryItem)) {
+                const previewNode = new Node(`Preview_${propertyName}`);
+                const label = previewNode.addComponent(Label);
+                label.string = JSON.stringify({
+                    [propertyName]: dataCarryItem[propertyName],
+                });
+                this.dataPreview.addChild(previewNode);
+            }
         }
 
         if (this.isConnectedGecko()) {
@@ -267,7 +288,13 @@ export class PopupSpecialGecko extends Component {
             }
 
             if (handler === 'onChooseGeckoWithItem') {
-                isSelected = geckoData?.properties?.carryItem?.type === eventData;
+                const selectedTypes = [];
+                if (geckoData?.properties?.carryItem?.type != null) {
+                    selectedTypes.push(geckoData.properties.carryItem.type);
+                }
+                selectedTypes.push(...(geckoData?.properties?.extraCarryItems ?? [])
+                    .map((carryItem) => carryItem.type));
+                isSelected = selectedTypes.findIndex((type) => type === eventData) !== -1;
             }
 
             if (handler === 'onChooseGeckoCover') {
@@ -370,12 +397,29 @@ export class PopupSpecialGecko extends Component {
         this._input.dataSpecialGecko = specialGecko;
     }
 
-    private removeCarryItem() {
+    private removeCarryItem(carryItemType: CarryItemType) {
         this._input.dataCarryItem = undefined;
 
         const geckoData = this.getEditableGeckoData();
         if (geckoData.properties) {
-            delete geckoData.properties.carryItem;
+            const primaryCarryItem = geckoData.properties.carryItem;
+            const extraCarryItems = geckoData.properties.extraCarryItems ?? [];
+
+            if (primaryCarryItem?.type === carryItemType) {
+                const nextPrimary = extraCarryItems.shift();
+                geckoData.properties.carryItem = nextPrimary;
+            } else {
+                geckoData.properties.extraCarryItems = extraCarryItems
+                    .filter((carryItem) => carryItem.type !== carryItemType);
+            }
+
+            if (!geckoData.properties.carryItem) {
+                delete geckoData.properties.carryItem;
+            }
+
+            if ((geckoData.properties.extraCarryItems ?? []).length === 0) {
+                delete geckoData.properties.extraCarryItems;
+            }
         }
 
         GeckoItemHandler.removeGeckoItem(this._input);

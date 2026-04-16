@@ -39,6 +39,7 @@ export type GeckoProperties = {
   extraGeckoTypes?: GeckoType[];
   carryItem?: CarryItemData;
   specialGecko?: SpecialGeckoData;
+  extraCarryItems?: CarryItemData[];
 }
 
 export type GeckoData = {
