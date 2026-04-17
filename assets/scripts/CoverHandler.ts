@@ -1,5 +1,5 @@
-import { Node, Sprite, UIOpacity, UITransform, Vec3 } from 'cc';
-import { InputSpecialGeckoPopup, InputSpecialHolePopup } from './Config';
+import { Label, LabelOutline, Node, Sprite, UIOpacity, UITransform, Vec3 } from 'cc';
+import { CoverData, InputSpecialGeckoPopup, InputSpecialHolePopup } from './Config';
 import { CoverType } from './Type';
 import { setSprite } from './Utils';
 
@@ -24,7 +24,7 @@ export class CoverHandler {
             if (coverData.type === CoverType.Crate) {
                 for (const geckoPart of input.geckoParts) {
                     const rootNode = geckoPart.node;
-                    this.addCoverNode(rootNode, coverIndex, coverData.type);
+                    this.addCoverNode(rootNode, coverIndex, coverData);
                 }
                 continue;
             }
@@ -32,7 +32,7 @@ export class CoverHandler {
             if (coverData.type === CoverType.Ice) {
                 for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
                     const rootNode = input.geckoParts[bodyIndex].node;
-                    this.addCoverNode(rootNode, coverIndex, coverData.type);
+                    this.addCoverNode(rootNode, coverIndex, coverData);
                 }
                 continue;
             }
@@ -53,12 +53,12 @@ export class CoverHandler {
         }
 
         if (coverData.type === CoverType.Crate) {
-            this.addCoverNode(rootNode, 0, coverData.type);
+            this.addCoverNode(rootNode, 0, coverData);
             return;
         }
 
         if (coverData.type === CoverType.Ice) {
-            this.addCoverNode(rootNode, 0, coverData.type);
+            this.addCoverNode(rootNode, 0, coverData);
             return;
         }
     }
@@ -91,7 +91,8 @@ export class CoverHandler {
         }
     }
 
-    private static addCoverNode(rootNode: Node, coverIndex: number, coverType: CoverType) {
+    private static addCoverNode(rootNode: Node, coverIndex: number, coverData: CoverData) {
+        const coverType = coverData.type;
         const coverNode = new Node(`Cover_${coverType}_${coverIndex}`);
         coverNode.setPosition(0, 0, 0);
         coverNode.setScale(1, 1, 1);
@@ -104,6 +105,21 @@ export class CoverHandler {
 
             const sprite = coverNode.addComponent(Sprite);
             setSprite('cover_ice', sprite);
+        }
+
+        const countValue = coverData.properties?.count;
+        if (countValue != null) {
+            const labelNode = new Node('Label_cover_count');
+            labelNode.setPosition(0, 25, 0);
+
+            const label = labelNode.addComponent(Label);
+            label.string = `${CoverType[coverType]}: ${countValue}`;
+            label.isBold = true;
+            label.outlineWidth = 2;
+
+            labelNode.addComponent(LabelOutline);
+
+            coverNode.addChild(labelNode);
         }
 
         rootNode.addChild(coverNode);

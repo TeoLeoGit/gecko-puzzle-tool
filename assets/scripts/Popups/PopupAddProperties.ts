@@ -143,7 +143,13 @@ export class PopupAddProperties extends Component {
             return Event.UPDATE_GROUND_VIEW_PROPERTIES;
         }
 
-        if (this._input?.dataCover || this._input?.coverData) {
+        if (this._input?.holeData) {
+            return Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES;
+        }
+
+        // coverData is the level cover popup input.
+        // dataCover is used by special gecko/hole popups and should refresh via UPDATE_VIEW_PROPERTIES.
+        if (this._input?.coverData) {
             return Event.UPDATE_COVER_VIEW_PROPERTIES;
         }
 

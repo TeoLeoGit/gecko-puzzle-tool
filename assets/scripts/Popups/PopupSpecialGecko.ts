@@ -207,7 +207,7 @@ export class PopupSpecialGecko extends Component {
     }
 
     updateViewProperties() {
-        if (!this.dataPreview) {
+        if (!this.dataPreview || !this._input) {
             return;
         }
 
@@ -265,6 +265,13 @@ export class PopupSpecialGecko extends Component {
             this.dataPreview.addChild(previewNode);
         }
 
+        // Defer rebuild until next frame so gecko parts are instantiated.
+        this.scheduleOnce(() => {
+            if (!this._input || !this.node?.isValid) {
+                return;
+            }
+            CoverHandler.addCoverForGecko(this._input);
+        }, 0);
         this.updateViewSelectedType();
     }
 

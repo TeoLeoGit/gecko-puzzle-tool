@@ -178,7 +178,7 @@ export class CoverObject extends Component {
         if (!label) {
             label = labelNode.addComponent(Label);
         }
-        label.string = String(this._coverData.properties.count ?? 0);
+        label.string = `${CoverType[this._coverType]}: ${this._coverData.properties.count ?? 0}`;
         label.isBold = true;
 
         let outline = labelNode.getComponent(LabelOutline);

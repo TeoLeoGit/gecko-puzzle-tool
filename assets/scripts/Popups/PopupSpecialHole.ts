@@ -20,13 +20,13 @@ export class PopupSpecialHole extends Component {
 
     protected onLoad(): void {
         EventManager.instance.on(Event.SHOW_SPECIAL_HOLE_POPUP, this.onShow, this);
-        EventManager.instance.on(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties, this);
+        EventManager.instance.on(Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES, this.updateViewProperties, this);
         this.node.active = false;
     }
 
     protected onDestroy(): void {
         EventManager.instance.off(Event.SHOW_SPECIAL_HOLE_POPUP, this.onShow, this);
-        EventManager.instance.off(Event.UPDATE_VIEW_PROPERTIES, this.updateViewProperties, this);
+        EventManager.instance.off(Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES, this.updateViewProperties, this);
     }
 
     onShow(input: InputSpecialHolePopup) {
@@ -59,7 +59,7 @@ export class PopupSpecialHole extends Component {
             SpecialHoleHandler.addSpecialHole(this._inputData);
         }
 
-        EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
+        EventManager.instance.emit(Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES);
         this.node.active = false;
     }
 
@@ -128,7 +128,7 @@ export class PopupSpecialHole extends Component {
     }
 
     updateViewProperties() {
-        if (!this.dataPreview) {
+        if (!this.dataPreview || !this._inputData) {
             return;
         }
 
@@ -155,6 +155,13 @@ export class PopupSpecialHole extends Component {
             this.dataPreview.addChild(previewNode);
         }
 
+        // Defer rebuild until next frame so hole node is instantiated.
+        this.scheduleOnce(() => {
+            if (!this._inputData || !this.node?.isValid) {
+                return;
+            }
+            CoverHandler.addCoverHole(this._inputData);
+        }, 0);
         this.updateViewSelectedType();
     }
 
