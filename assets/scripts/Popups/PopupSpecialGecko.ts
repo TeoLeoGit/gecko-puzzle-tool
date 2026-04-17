@@ -202,6 +202,7 @@ export class PopupSpecialGecko extends Component {
 
         this._input.dataCover = coverData;
         CoverHandler.addCoverForGecko(this._input);
+        this.updateViewProperties();
         EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._input);
     }
 
