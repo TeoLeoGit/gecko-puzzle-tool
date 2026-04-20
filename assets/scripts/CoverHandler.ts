@@ -5,13 +5,23 @@ import { setSprite } from './Utils';
 
 export class CoverHandler {
     public static addCoverForGecko(input: InputSpecialGeckoPopup) {
+        // Defer to next tick so newly created gecko parts are fully initialized.
+        setTimeout(() => {
+            this.addCoverForGeckoNow(input);
+        }, 0);
+    }
+
+    private static addCoverForGeckoNow(input: InputSpecialGeckoPopup) {
         const covers = input.geckoData.Cover ?? [];
         if (covers.length === 0 || !input.geckoParts?.length) {
             return;
         }
 
         for (const geckoPart of input.geckoParts) {
-            const rootNode = geckoPart.node;
+            const rootNode = geckoPart?.node;
+            if (!rootNode?.isValid) {
+                continue;
+            }
             for (const child of [...rootNode.children]) {
                 if (child.name.startsWith('Cover_')) {
                     child.destroy();
@@ -23,7 +33,10 @@ export class CoverHandler {
             const coverData = covers[coverIndex];
             if (coverData.type === CoverType.Crate) {
                 for (const geckoPart of input.geckoParts) {
-                    const rootNode = geckoPart.node;
+                    const rootNode = geckoPart?.node;
+                    if (!rootNode?.isValid) {
+                        continue;
+                    }
                     this.addCoverNode(rootNode, coverIndex, coverData);
                 }
                 continue;
@@ -31,7 +44,10 @@ export class CoverHandler {
 
             if (coverData.type === CoverType.Ice) {
                 for (let bodyIndex = 1; bodyIndex < input.geckoParts.length; bodyIndex++) {
-                    const rootNode = input.geckoParts[bodyIndex].node;
+                    const rootNode = input.geckoParts[bodyIndex]?.node;
+                    if (!rootNode?.isValid) {
+                        continue;
+                    }
                     this.addCoverNode(rootNode, coverIndex, coverData);
                 }
                 continue;
