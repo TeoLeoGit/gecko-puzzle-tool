@@ -27,8 +27,8 @@ export class GroundObject extends Component {
     private _slidingGateSprites: Node[] = [];
     private _dirArrowNodes: Node[] = [];
 
-    private static readonly ROPE_SEGMENT_SPACING = 60;
-    private static readonly ROPE_SEGMENT_SCALE = 0.6;
+    private static readonly ROPE_SEGMENT_SPACING = 50;
+    private static readonly ROPE_SEGMENT_SCALE = 0.5;
 
     protected onLoad(): void {
         EventManager.instance.on(Event.UPDATE_GROUND_VIEW_PROPERTIES, this.refreshVisual, this);
