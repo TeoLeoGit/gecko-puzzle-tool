@@ -5,8 +5,8 @@ import { GeckoBody } from "./GeckoBody";
 import { Hole } from "./Hole";
 
 export class Config {
-  public static MAX_ROW = 16;
-  public static MAX_COLUMN = 16;
+  public static MAX_ROW = 20;
+  public static MAX_COLUMN = 20;
 }
 
 export interface GeckoPart {

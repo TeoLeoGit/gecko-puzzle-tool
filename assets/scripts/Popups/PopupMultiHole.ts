@@ -66,6 +66,7 @@ export class PopupMultiHole extends Component {
             SpecialHoleHandler.addSpecialHole(this._inputData);
         }
 
+        EventManager.instance.emit(Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES);
         EventManager.instance.emit(Event.UPDATE_VIEW_PROPERTIES);
         this.node.active = false;
     }

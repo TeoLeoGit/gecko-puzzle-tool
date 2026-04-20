@@ -428,8 +428,8 @@ export class Tool extends Component {
             }
             this._grid.push(row);
         }
-        this.resizeGrid(Config.MAX_ROW, Config.MAX_COLUMN);
-        this.initWalls(Config.MAX_ROW, Config.MAX_COLUMN);
+        this.resizeGrid(Config.MAX_COLUMN, Config.MAX_ROW);
+        this.initWalls(Config.MAX_COLUMN, Config.MAX_ROW);
     }
 
     initWalls(cols: number, rows: number) {
@@ -444,20 +444,37 @@ export class Tool extends Component {
 
     resizeGrid(row: number, col: number) {
         const maxDim = Math.max(row, col);
+        const baseDimension = 10;
+        const legacyMaxDimension = 16;
+        const legacyMinScale = 0.6;
 
         // If both dimensions are 10 or less, use default scale.
-        if (maxDim <= 10) {
+        if (maxDim <= baseDimension) {
             this.gridParent.setScale(1, 1, 1);
             return;
         }
 
-        // Clamp to the allowed maximum (16).
-        const clamped = Math.min(16, Math.max(10, maxDim));
+        // Keep legacy behavior exactly for 11..16.
+        if (maxDim <= legacyMaxDimension) {
+            const t = (maxDim - baseDimension) / (legacyMaxDimension - baseDimension); // 0 -> 1
+            const eased = Math.pow(t, 0.8);
+            const scale = 1 - 0.4 * eased; // 1 -> 0.6
+            this.gridParent.setScale(scale, scale, 1);
+            return;
+        }
 
-        // Non-linear interpolation: shrink more at 11..15 while keeping 16 at 0.6.
-        const t = (clamped - 10) / (16 - 10); // 0 -> 1
-        const eased = Math.pow(t, 0.8);
-        const scale = 1 - 0.4 * eased; // 1 -> 0.6
+        const maxConfiguredDimension = Math.max(Config.MAX_ROW, Config.MAX_COLUMN);
+        if (maxConfiguredDimension <= legacyMaxDimension) {
+            this.gridParent.setScale(legacyMinScale, legacyMinScale, 1);
+            return;
+        }
+
+        // Extend scaling smoothly from 16 to configured max (e.g. 20).
+        const clamped = Math.min(maxConfiguredDimension, maxDim);
+        const t = (clamped - legacyMaxDimension) / (maxConfiguredDimension - legacyMaxDimension); // 0 -> 1
+        const eased = Math.pow(t, 0.9);
+        const minScaleAtConfiguredMax = 0.5;
+        const scale = legacyMinScale - (legacyMinScale - minScaleAtConfiguredMax) * eased;
 
         this.gridParent.setScale(scale, scale, 1);
     }
