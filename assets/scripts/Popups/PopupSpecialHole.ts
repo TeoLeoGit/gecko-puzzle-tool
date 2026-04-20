@@ -124,7 +124,7 @@ export class PopupSpecialHole extends Component {
 
         this._inputData!.dataCover = coverData;
         CoverHandler.addCoverHole(this._inputData!);
-        EventManager.instance.emit(Event.UPDATE_SPECIAL_HOLE_VIEW_PROPERTIES, this._inputData!);
+        EventManager.instance.emit(Event.SHOW_ADD_PROPERTIES_POPUP, this._inputData!);
     }
 
     updateViewProperties() {

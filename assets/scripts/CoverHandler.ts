@@ -120,7 +120,12 @@ export class CoverHandler {
             opacity.opacity = Math.round(255 * 0.6);
 
             const sprite = coverNode.addComponent(Sprite);
-            setSprite('cover_ice', sprite);
+            sprite.scheduleOnce(() => {
+                if (!sprite.isValid) {
+                    return;
+                }
+                setSprite('cover_ice', sprite);
+            }, 0.05);
         }
 
         const countValue = coverData.properties?.count;
