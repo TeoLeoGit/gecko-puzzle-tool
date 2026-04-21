@@ -81,21 +81,26 @@ export class SpecialGeckoHandler {
     }
 
     private static addStraightGeckoArrow(input: InputSpecialGeckoPopup) {
-        const tailNode = input.geckoParts?.[input.geckoParts.length - 1]?.node;
+        const headPart = input.geckoParts?.[0];
+        const headNode = headPart?.node;
+        if (!headNode) {
+            return;
+        }
 
-        for (const child of [...tailNode.children]) {
+        for (const child of [...headNode.children]) {
             if (child.name.startsWith('StraightGeckoArrow_')) {
                 child.destroy();
             }
         }
 
         const arrowNode = new Node('StraightGeckoArrow_0');
-        arrowNode.setPosition(0, 100, 0);
-        arrowNode.setScale(0.5, 3, 1);
+        arrowNode.setPosition(0, 0, 0);
+        arrowNode.setScale(0.6, 0.6, 1);
+        arrowNode.angle = headPart.sprGeckoBody.node.angle;
 
         const sprite = arrowNode.addComponent(Sprite);
         setSprite('arrow_dir', sprite);
 
-        tailNode.addChild(arrowNode);
+        headNode.addChild(arrowNode);
     }
 }
