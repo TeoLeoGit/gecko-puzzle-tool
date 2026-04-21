@@ -18,8 +18,8 @@ export class SpecialGeckoHandler {
                 for (let i = 0; i < stackColors.length; i++) {
                     const stackNode = new Node(`StackedBody_${i}`);
                     stackNode.setScale(
-                        rootNode.scale.x * (i === 1 ? 0.3 : 0.5),
-                        rootNode.scale.y * (i === 1 ? 0.3 : 0.5),
+                        rootNode.scale.x * (i === 1 ? 0.2 : 0.4),
+                        rootNode.scale.y * (i === 1 ? 0.2 : 0.4),
                         rootNode.scale.z,
                     );
 

@@ -49,7 +49,7 @@ export class GeckoItemHandler {
     private static addItemSprite(rootNode: Node, spriteName: string, carryItemType: CarryItemType) {
         const itemNode = new Node(`CarryItem_${carryItemType}`);
         itemNode.setPosition(0, 0, 0);
-        itemNode.setScale(1, 1, 1);
+        itemNode.setScale(0.8, 0.8, 1);
 
         const sprite = itemNode.addComponent(Sprite);
         setSprite(spriteName, sprite);
