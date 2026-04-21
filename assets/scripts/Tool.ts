@@ -120,6 +120,8 @@ export class Tool extends Component {
     private _currentGeckoData: GeckoData;
     private _mapGeckoIdAndParts: Map<number, GeckoBody[]> = new Map();
     private _isCreateConnectedGecko: boolean = false;
+    private prevGroundButton: Node | null = null;
+    private prevCoverButton: Node | null = null;
 
     private _editLevelData: LevelData = {
         level: 1,
@@ -298,6 +300,17 @@ export class Tool extends Component {
             return;
         }
 
+        const eventButton = (_event as { currentTarget?: Node })?.currentTarget ?? null;
+        if (this.prevGroundButton) {
+            const prevCheck = this.prevGroundButton.getChildByName("Sprite_check");
+            if (prevCheck) prevCheck.active = false;
+        }
+        if (eventButton) {
+            this.prevGroundButton = eventButton;
+            const currentCheck = this.prevGroundButton.getChildByName("Sprite_check");
+            if (currentCheck) currentCheck.active = true;
+        }
+
         Global.GroundType = parsed as GroundType;
         this._draggedGround?.getComponent(GroundObject)?.setType(Global.GroundType);
         this.onChooseGroundDesignMode();
@@ -307,6 +320,17 @@ export class Tool extends Component {
         const parsed = Number(customEventData);
         if (isNaN(parsed)) {
             return;
+        }
+
+        const eventButton = (_event as { currentTarget?: Node })?.currentTarget ?? null;
+        if (this.prevCoverButton) {
+            const prevCheck = this.prevCoverButton.getChildByName("Sprite_check");
+            if (prevCheck) prevCheck.active = false;
+        }
+        if (eventButton) {
+            this.prevCoverButton = eventButton;
+            const currentCheck = this.prevCoverButton.getChildByName("Sprite_check");
+            if (currentCheck) currentCheck.active = true;
         }
 
         Global.CoverType = parsed as CoverType;
@@ -1571,11 +1595,11 @@ export class Tool extends Component {
     }
 
     onChooseGroundDesignMode() {
-        if (Global.DesignMode === DesignMode.CreateGround) {
-            this.clearDesignMode();
-            this._draggedGround.active = false;
-            return;
-        }
+        // if (Global.DesignMode === DesignMode.CreateGround) {
+        //     this.clearDesignMode();
+        //     this._draggedGround.active = false;
+        //     return;
+        // }
 
         this.clearDesignMode();
         this._draggedGround.active = true;
@@ -1593,11 +1617,11 @@ export class Tool extends Component {
     }
 
     onChooseCoverDesignMode() {
-        if (Global.DesignMode === DesignMode.CreateCover) {
-            this.clearDesignMode();
-            this._draggedCover && (this._draggedCover.active = false);
-            return;
-        }
+        // if (Global.DesignMode === DesignMode.CreateCover) {
+        //     this.clearDesignMode();
+        //     this._draggedCover && (this._draggedCover.active = false);
+        //     return;
+        // }
 
         this.clearDesignMode();
         if (this._draggedCover) {
