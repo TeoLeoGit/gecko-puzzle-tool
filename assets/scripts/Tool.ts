@@ -1950,17 +1950,7 @@ export class Tool extends Component {
                 );
             }
 
-            const carryItem = gecko.properties?.carryItem;
-            if (!carryItem) {
-                continue;
-            }
-
-            const lockType = carryItem.colorLockType ?? ItemLockType.Gold;
-            if (carryItem.type === CarryItemType.Lock) {
-                lockGeckoByType.set(lockType, (lockGeckoByType.get(lockType) ?? 0) + 1);
-            } else if (carryItem.type === CarryItemType.Key) {
-                keyGeckoByType.set(lockType, (keyGeckoByType.get(lockType) ?? 0) + 1);
-            }
+            this.collectCarryItemByTypeForValidation(gecko, lockGeckoByType, keyGeckoByType);
         }
 
         for (const hole of this._editLevelData.holes) {
@@ -2016,6 +2006,27 @@ export class Tool extends Component {
         }
 
         return '';
+    }
+
+    private collectCarryItemByTypeForValidation(
+        gecko: GeckoData,
+        lockGeckoByType: Map<number, number>,
+        keyGeckoByType: Map<number, number>,
+    ): void {
+        const carryItem = gecko.properties?.carryItem;
+        if (carryItem) {
+            const lockType = carryItem.colorLockType ?? ItemLockType.Gold;
+            if (carryItem.type === CarryItemType.Lock) {
+                lockGeckoByType.set(lockType, (lockGeckoByType.get(lockType) ?? 0) + 1);
+            } else if (carryItem.type === CarryItemType.Key) {
+                keyGeckoByType.set(lockType, (keyGeckoByType.get(lockType) ?? 0) + 1);
+            }
+        }
+
+        const connectedMembers = gecko.properties?.specialGecko?.connectedMembers ?? [];
+        for (const member of connectedMembers) {
+            this.collectCarryItemByTypeForValidation(member, lockGeckoByType, keyGeckoByType);
+        }
     }
 
     private getGeckoValidationColors(gecko: GeckoData): ColorType[] {
