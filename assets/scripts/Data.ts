@@ -1,5 +1,6 @@
 import { JsonAsset, log, resources } from "cc";
 import { LevelData } from "./Config";
+import { ColorType, GeckoType } from "./Type";
 
 /** Root shape of levels.json */
 export type LevelsJsonRoot = {
@@ -93,5 +94,31 @@ export class Data {
 
     public static nextLevelId(): number {
         return this._levels.length + 1;
+    }
+
+    public static fixConnectedGeckoLevels() {
+        for (const levelData of this._levels ?? []) {
+            const geckos = levelData.geckos ?? [];
+            let hasConnectedGecko = false;
+            let changedCount = 0;
+
+            for (const gecko of geckos) {
+                if (gecko.type !== GeckoType.Connected) {
+                    continue;
+                }
+
+                hasConnectedGecko = true;
+
+                // Update only the container gecko color, not connected members.
+                if (gecko.color !== ColorType.ConnectedColor) {
+                    gecko.color = ColorType.ConnectedColor;
+                    changedCount++;
+                }
+            }
+
+            if (hasConnectedGecko) {
+                log(`[FixConnectedGeckoLevels] Level ${levelData.level}: changed ${changedCount} connected gecko(s).`);
+            }
+        }
     }
 }

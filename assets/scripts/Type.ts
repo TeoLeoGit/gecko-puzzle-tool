@@ -59,6 +59,8 @@ export enum ColorType {
   Hidden = 20,
   Masked = 21,
   Sick = 22,
+
+  ConnectedColor = 99,
 }
 
 export enum CoverType {

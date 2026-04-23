@@ -120,8 +120,8 @@ export class Tool extends Component {
     private _currentGeckoData: GeckoData;
     private _mapGeckoIdAndParts: Map<number, GeckoBody[]> = new Map();
     private _isCreateConnectedGecko: boolean = false;
-    private prevGroundButton: Node | null = null;
-    private prevCoverButton: Node | null = null;
+    private _prevGroundButton: Node | null = null;
+    private _prevCoverButton: Node | null = null;
 
     private _editLevelData: LevelData = {
         level: 1,
@@ -301,13 +301,13 @@ export class Tool extends Component {
         }
 
         const eventButton = (_event as { currentTarget?: Node })?.currentTarget ?? null;
-        if (this.prevGroundButton) {
-            const prevCheck = this.prevGroundButton.getChildByName("Sprite_check");
+        if (this._prevGroundButton) {
+            const prevCheck = this._prevGroundButton.getChildByName("Sprite_check");
             if (prevCheck) prevCheck.active = false;
         }
         if (eventButton) {
-            this.prevGroundButton = eventButton;
-            const currentCheck = this.prevGroundButton.getChildByName("Sprite_check");
+            this._prevGroundButton = eventButton;
+            const currentCheck = this._prevGroundButton.getChildByName("Sprite_check");
             if (currentCheck) currentCheck.active = true;
         }
 
@@ -323,13 +323,13 @@ export class Tool extends Component {
         }
 
         const eventButton = (_event as { currentTarget?: Node })?.currentTarget ?? null;
-        if (this.prevCoverButton) {
-            const prevCheck = this.prevCoverButton.getChildByName("Sprite_check");
+        if (this._prevCoverButton) {
+            const prevCheck = this._prevCoverButton.getChildByName("Sprite_check");
             if (prevCheck) prevCheck.active = false;
         }
         if (eventButton) {
-            this.prevCoverButton = eventButton;
-            const currentCheck = this.prevCoverButton.getChildByName("Sprite_check");
+            this._prevCoverButton = eventButton;
+            const currentCheck = this._prevCoverButton.getChildByName("Sprite_check");
             if (currentCheck) currentCheck.active = true;
         }
 
@@ -1896,7 +1896,7 @@ export class Tool extends Component {
         this.normalizeConnectedMembers(this._currentGeckoData);
         if (this._currentGeckoData.type === GeckoType.Connected
             && (this._currentGeckoData.properties?.specialGecko?.connectedMembers?.length ?? 0) > 0) {
-            this._currentGeckoData.color = 99 as ColorType;
+            this._currentGeckoData.color = 99;
         }
 
         const data: GeckoData = {
